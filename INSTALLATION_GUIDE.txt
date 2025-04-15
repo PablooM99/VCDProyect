@@ -1,0 +1,41 @@
+
+# ✅ Guía completa para instalar y desplegar el proyecto
+
+1. Cloná o descomprimí el proyecto en tu PC
+
+2. Instalá dependencias (necesitás tener Node.js y npm instalados):
+
+npm install
+
+3. Instalá Firebase CLI (una sola vez)
+
+npm install -g firebase-tools
+
+4. Iniciá sesión con tu cuenta de Firebase:
+
+firebase login
+
+5. Asociá el proyecto local con tu Firebase:
+
+firebase use --add
+
+(Seleccioná el proyecto: vcdproyect)
+
+6. Generá el build optimizado:
+
+npm run build
+
+7. Deploy a Firebase Hosting:
+
+firebase deploy
+
+¡Listo! Tu app estará publicada en: https://vcdproyect.web.app
+
+
+Mejora del proceso de checkout: Formulario final antes de confirmar el pedido, con resumen, envío, etc.
+
+Dashboard con estadísticas para admin: Total de ventas, usuarios, ingresos mensuales, etc.
+
+Sistema de reseñas/comentarios por producto.
+
+Sistema de favoritos / wishlist por usuario.

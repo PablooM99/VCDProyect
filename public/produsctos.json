@@ -1,0 +1,38 @@
+[
+    {
+      "title": "Taladro Eléctrico Industrial",
+      "price": 15999.99,
+      "imageURL": "https://picsum.photos/seed/taladro/400/300",
+      "categoria": "herramientas",
+      "stock": 20
+    },
+    {
+      "title": "Pintura Latex Blanca 4L",
+      "price": 8999.5,
+      "imageURL": "https://picsum.photos/seed/pintura/400/300",
+      "categoria": "pintura",
+      "stock": 35
+    },
+    {
+      "title": "Caja de Herramientas 60 piezas",
+      "price": 21500,
+      "imageURL": "https://picsum.photos/seed/caja60/400/300",
+      "categoria": "herramientas",
+      "stock": 12
+    },
+    {
+      "title": "Cable Eléctrico x 50m",
+      "price": 13499,
+      "imageURL": "https://picsum.photos/seed/cable50m/400/300",
+      "categoria": "electricidad",
+      "stock": 40
+    },
+    {
+      "title": "Llave francesa 12 pulgadas",
+      "price": 3290,
+      "imageURL": "https://picsum.photos/seed/llave12/400/300",
+      "categoria": "ferretería",
+      "stock": 25
+    }
+  ]
+  
