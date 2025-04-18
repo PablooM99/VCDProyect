@@ -7,9 +7,9 @@ import {
   doc,
   onSnapshot,
   setDoc,
-  deleteDoc,
-  getDoc
+  deleteDoc
 } from "firebase/firestore";
+import { toast } from "react-toastify";
 
 const FavoritosContext = createContext();
 
@@ -35,22 +35,27 @@ export function FavoritosProvider({ children }) {
   }, [user]);
 
   const toggleFavorito = async (producto) => {
-    if (!user) return;
+    if (!user) {
+      toast.error("Debes iniciar sesión para usar favoritos");
+      return;
+    }
 
     const refDoc = doc(db, "usuarios", user.uid, "favoritos", producto.id);
     const existe = favoritos.some((p) => p.id === producto.id);
 
     if (existe) {
       await deleteDoc(refDoc);
+      toast.info("❌ Producto eliminado de favoritos");
     } else {
       const favorito = {
         id: producto.id,
         title: producto.title,
         price: producto.price,
         categoria: producto.categoria || "",
-        imageURL: producto.imageURL || producto.imageURLs?.[0] || "", // Usamos imageURL prioritariamente
+        imageURL: producto.imageURL || producto.imageURLs?.[0] || "",
       };
       await setDoc(refDoc, favorito);
+      toast.success("💖 Producto agregado a favoritos");
     }
   };
 
@@ -60,6 +65,7 @@ export function FavoritosProvider({ children }) {
     if (!user) return;
     const refDoc = doc(db, "usuarios", user.uid, "favoritos", id);
     await deleteDoc(refDoc);
+    toast.info("❌ Producto eliminado de favoritos");
   };
 
   return (

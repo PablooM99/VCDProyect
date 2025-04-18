@@ -9,6 +9,10 @@ import PedidosAdmin from "../components/PedidosAdmin";
 import UsuariosAdmin from "../components/UsuariosAdmin";
 import ProductosPorCategoria from "../components/ProductosPorCategoriaAdmin";
 import DashboardAdmin from "../components/DashboardAdmin";
+import SoporteAdmin from "../pages/SoporteAdmin";
+import CuponesAdmin from "../components/CuponesAdmin";
+import PedidosPendientesAdmin from "../components/PedidosPendientesAdmin";
+
 
 export default function AdminPanel() {
   const { user } = useAuth();
@@ -68,10 +72,30 @@ export default function AdminPanel() {
           Usuarios
         </button>
         <button
+          onClick={() => setTab("cupones")}
+          className={`px-4 py-2 rounded font-semibold ${
+            tab === "cupones" ? "bg-amber-500 text-black" : "bg-gray-700 text-white"
+          }`}
+        >
+          Cupones
+        </button>
+        <button
           onClick={() => setTab("categorias")}
           className={`px-4 py-2 rounded font-semibold ${tab === "categorias" ? "bg-amber-500 text-black" : "bg-gray-700 text-white"}`}
         >
           Productos por Categoría
+        </button>
+        <button
+          onClick={() => setTab("pendientes")}
+          className={`px-4 py-2 rounded font-semibold ${tab === "pendientes" ? "bg-amber-500 text-black" : "bg-gray-700 text-white"}`}
+        >
+          Pedidos Pendientes
+        </button>
+        <button
+          onClick={() => setTab("soporte")}
+          className={`px-4 py-2 rounded font-semibold ${tab === "soporte" ? "bg-amber-500 text-black" : "bg-gray-700 text-white"}`}
+        >
+          Soporte
         </button>
       </div>
 
@@ -81,6 +105,10 @@ export default function AdminPanel() {
         {tab === "pedidos" && <PedidosAdmin />}
         {tab === "usuarios" && <UsuariosAdmin />}
         {tab === "categorias" && <ProductosPorCategoria />}
+        {tab === "soporte" && <SoporteAdmin />}
+        {tab === "cupones" && <CuponesAdmin />}
+        {tab === "pendientes" && <PedidosPendientesAdmin />}
+
       </div>
     </div>
   );

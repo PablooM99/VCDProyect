@@ -182,6 +182,7 @@ export default function Productos() {
                 prod.imageURLs?.[0] || prod.imageURL || "https://via.placeholder.com/150"
               }
               alt={prod.title}
+              loading="lazy"
               className="w-full h-48 object-cover bg-gray-900 rounded mb-2"
             />
             <button

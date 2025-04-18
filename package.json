@@ -19,7 +19,10 @@
     "nprogress": "^0.2.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-icons": "^5.5.0",
     "react-router-dom": "^6.30.0",
+    "react-toastify": "^11.0.5",
+    "recharts": "^2.15.2",
     "sweetalert2": "^11.10.0",
     "xlsx": "^0.18.5"
   },

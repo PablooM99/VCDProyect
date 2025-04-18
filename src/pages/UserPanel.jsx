@@ -5,6 +5,8 @@ import { db, auth } from "../firebase/config";
 import { collection, getDocs, query, where, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import Swal from "sweetalert2";
+import { Link } from "react-router-dom";
+
 
 export default function UserPanel() {
   const { user } = useAuth();
@@ -144,6 +146,12 @@ export default function UserPanel() {
           <button type="button" onClick={guardarCambios} className="w-full bg-amber-500 hover:bg-amber-600 text-black font-bold py-2 px-4 rounded">
             Guardar cambios
           </button>
+          <Link
+            to="/soporte"
+            className="w-full block text-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-2"
+          >
+            💬 Soporte
+          </Link>
         </form>
 
         <div className="mt-12">

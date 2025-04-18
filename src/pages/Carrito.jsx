@@ -2,14 +2,26 @@
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import Swal from "sweetalert2";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { db } from "../firebase/config";
+import { doc, getDoc } from "firebase/firestore";
+import { toast } from "react-toastify";
 
 export default function Carrito() {
   const cartContext = useCart();
-  const { cart, removeFromCart, updateQuantity, totalPrice } = cartContext;
+  const { cart, removeFromCart, updateQuantity } = cartContext;
   const setCart = cartContext.setCart;
   const { user } = useAuth();
+
+  const [cupon, setCupon] = useState("");
+  const [descuento, setDescuento] = useState(0);
+
+  const totalOriginal = cart.reduce(
+    (acc, item) => acc + item.price * item.cantidad,
+    0
+  );
+  const totalConDescuento = totalOriginal - (totalOriginal * descuento) / 100;
 
   useEffect(() => {
     localStorage.setItem("carrito", JSON.stringify(cart));
@@ -19,6 +31,35 @@ export default function Carrito() {
     setCart([]);
     localStorage.removeItem("carrito");
     Swal.fire("🧹 Carrito vaciado", "Tu carrito fue vaciado correctamente", "success");
+  };
+
+  const aplicarCupon = async () => {
+    if (!cupon.trim()) return;
+
+    try {
+      const ref = doc(db, "cupones", cupon.toUpperCase());
+      const snap = await getDoc(ref);
+
+      if (!snap.exists()) {
+        toast.error("❌ Cupón inválido");
+        setDescuento(0);
+        return;
+      }
+
+      const data = snap.data();
+
+      if (!data.activo) {
+        toast.warning("⚠️ Cupón no está activo");
+        setDescuento(0);
+        return;
+      }
+
+      setDescuento(data.descuento || 0);
+      toast.success(`🎉 Cupón aplicado: ${data.descuento}% de descuento`);
+    } catch (error) {
+      console.error("Error al verificar cupón:", error);
+      toast.error("❌ Error al validar el cupón");
+    }
   };
 
   return (
@@ -91,10 +132,32 @@ export default function Carrito() {
                 </li>
               ))}
             </ul>
+            {descuento > 0 && (
+              <div className="flex justify-between text-green-400 font-semibold">
+                <span>Descuento ({descuento}%)</span>
+                <span>- ${(totalOriginal - totalConDescuento).toFixed(2)}</span>
+              </div>
+            )}
             <div className="flex justify-between font-bold text-lg text-white border-t border-gray-700 pt-2">
               <span>Total</span>
-              <span className="text-amber-400">${totalPrice.toFixed(2)}</span>
+              <span className="text-amber-400">${totalConDescuento.toFixed(2)}</span>
             </div>
+          </div>
+
+          <div className="flex gap-4 items-center mb-6">
+            <input
+              type="text"
+              placeholder="Ingresar cupón de descuento"
+              className="bg-gray-800 text-white px-4 py-2 rounded w-full md:w-auto"
+              value={cupon}
+              onChange={(e) => setCupon(e.target.value)}
+            />
+            <button
+              onClick={aplicarCupon}
+              className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white font-semibold"
+            >
+              Aplicar Cupón
+            </button>
           </div>
 
           <div className="flex flex-wrap gap-4 justify-between">

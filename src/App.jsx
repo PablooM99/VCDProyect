@@ -10,6 +10,9 @@ import NavBar from "./components/NavBar";
 import Checkout from "./pages/Checkout";
 import ProductDetail from "./pages/ProductDetail";
 import Favoritos from "./pages/Favoritos";
+import Soporte from "./pages/Soporte";
+import CuponesAdmin from "./components/CuponesAdmin";
+import PedidosPendientesAdmin from "./components/PedidosPendientesAdmin";
 
 export default function App() {
   return (
@@ -23,6 +26,9 @@ export default function App() {
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/producto/:id" element={<ProductDetail />} />
         <Route path="/favoritos" element={<Favoritos />} />
+        <Route path="/soporte" element={<Soporte />} />
+        <Route path="/cupones" element={<CuponesAdmin />} />
+        <Route path="/PedidosPendientes" element={<PedidosPendientesAdmin />} />
         <Route path="/admin" element={
           <AdminRoute>
             <AdminPanel />

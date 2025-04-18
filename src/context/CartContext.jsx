@@ -1,5 +1,6 @@
 // src/context/CartContext.jsx
 import { createContext, useContext, useEffect, useState } from "react";
+import { toast } from "react-toastify";
 
 const CartContext = createContext();
 
@@ -19,10 +20,12 @@ export function CartProvider({ children }) {
     setCart((prev) => {
       const item = prev.find((p) => p.id === producto.id);
       if (item) {
+        toast.info(`➕ Se agregó otra unidad de "${producto.title}"`);
         return prev.map((p) =>
           p.id === producto.id ? { ...p, cantidad: p.cantidad + 1 } : p
         );
       } else {
+        toast.success(`🛒 Producto "${producto.title}" agregado al carrito`);
         return [...prev, { ...producto, cantidad: 1 }];
       }
     });
@@ -30,6 +33,7 @@ export function CartProvider({ children }) {
 
   const removeFromCart = (id) => {
     setCart((prev) => prev.filter((p) => p.id !== id));
+    toast.error("❌ Producto eliminado del carrito");
   };
 
   const updateQuantity = (id, cantidad) => {
@@ -46,7 +50,7 @@ export function CartProvider({ children }) {
     <CartContext.Provider
       value={{
         cart,
-        setCart, // <- ✅ ESTO FALTABA
+        setCart,
         addToCart,
         removeFromCart,
         updateQuantity,
