@@ -22,7 +22,7 @@ export default function NotificacionesPopover() {
 
     const q = query(
       collection(db, "usuarios", user.uid, "notificaciones"),
-      orderBy("fecha", "desc")
+      orderBy("timestamp", "desc") // CAMBIO: orden por timestamp
     );
 
     const unsub = onSnapshot(q, (snap) => {
@@ -88,9 +88,9 @@ export default function NotificacionesPopover() {
               {notificaciones.map((n) => (
                 <li key={n.id} className="p-3 text-sm text-white flex justify-between">
                   <div>
-                    <p className="text-white">{n.mensaje}</p>
+                    <p className="text-white">{n.descripcion || n.titulo}</p>
                     <p className="text-gray-400 text-xs">
-                      {new Date(n.fecha?.seconds * 1000).toLocaleString()}
+                      {new Date(n.timestamp?.seconds * 1000).toLocaleString()}
                     </p>
                   </div>
                   <button

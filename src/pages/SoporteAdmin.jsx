@@ -10,10 +10,14 @@ import {
   query,
   orderBy,
   serverTimestamp,
+  updateDoc,
+  addDoc,
 } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
+import { enviarNotificacion } from "../utils/notificacionesService";
+
 
 export default function SoporteAdmin() {
   const [usuarios, setUsuarios] = useState([]);
@@ -60,13 +64,33 @@ export default function SoporteAdmin() {
 
     const id = Date.now().toString();
 
-    await setDoc(
-      doc(db, "soporte", usuarioSeleccionado.id, "mensajes", id),
-      mensaje
-    );
+    try {
+      await setDoc(
+        doc(db, "soporte", usuarioSeleccionado.id, "mensajes", id),
+        mensaje
+        
+      );
+      await enviarNotificacion(
+        usuarioSeleccionado.id,
+        "📨 Nuevo mensaje de soporte"
+      );
+      
 
-    toast.success("Mensaje enviado al usuario");
-    setNuevoMensaje("");
+      // Crear notificación
+      await addDoc(collection(db, "usuarios", usuarioSeleccionado.id, "notificaciones"), {
+        titulo: "📩 Nuevo mensaje de soporte",
+        descripcion: "Revisa tu chat de soporte, tienes una nueva respuesta.",
+        leido: false,
+        timestamp: serverTimestamp(),
+        tipo: "soporte",
+      });
+
+      toast.success("Mensaje enviado y notificación creada");
+      setNuevoMensaje("");
+    } catch (error) {
+      console.error("Error al enviar mensaje:", error);
+      toast.error("No se pudo enviar el mensaje");
+    }
   };
 
   const borrarMensaje = async (msgId) => {
@@ -124,7 +148,6 @@ export default function SoporteAdmin() {
       <h1 className="text-2xl font-bold text-amber-400 mb-6">📨 Soporte a Usuarios</h1>
 
       <div className="grid md:grid-cols-3 gap-6">
-        {/* Lista de usuarios */}
         <div className="bg-gray-900 p-4 rounded shadow">
           <h2 className="text-lg font-semibold mb-2 text-amber-300">Usuarios con cuenta</h2>
           <ul className="space-y-2 max-h-[400px] overflow-auto">
@@ -144,7 +167,6 @@ export default function SoporteAdmin() {
           </ul>
         </div>
 
-        {/* Chat de soporte */}
         {usuarioSeleccionado && (
           <div className="md:col-span-2 bg-gray-900 p-4 rounded shadow flex flex-col">
             <h3 className="text-lg font-bold text-amber-300 mb-2">

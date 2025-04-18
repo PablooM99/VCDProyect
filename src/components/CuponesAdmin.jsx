@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   collection,
-  addDoc,
   deleteDoc,
   updateDoc,
   doc,
@@ -32,8 +31,8 @@ export default function CuponesAdmin() {
     const cuponID = codigo.trim().toUpperCase();
 
     await setDoc(doc(db, "cupones", cuponID), {
-    descuento: Number(descuento),
-    activo: true,
+      descuento: Number(descuento),
+      activo: true,
     });
 
     setCodigo("");
@@ -102,7 +101,7 @@ export default function CuponesAdmin() {
           <tbody>
             {cupones.map((c) => (
               <tr key={c.id} className="border-t border-gray-700">
-                <td className="p-2">{c.codigo}</td>
+                <td className="p-2 font-semibold">{c.id}</td> {/* 👈 Mostrar ID como código */}
                 <td className="p-2 text-center">{c.descuento}</td>
                 <td className="p-2 text-center">
                   {c.activo ? (
