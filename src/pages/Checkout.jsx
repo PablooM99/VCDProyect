@@ -6,10 +6,18 @@ import { db } from "../firebase/config";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
 import Swal from "sweetalert2";
-import { toast } from "react-toastify"; // ✅ NUEVO
+import { toast } from "react-toastify";
 
 export default function Checkout() {
-  const { cart, totalPrice, setCart } = useCart();
+  const {
+    cart,
+    totalConDescuento,
+    setCart,
+    cupon,
+    descuentoCupon,
+    limpiarCupon
+  } = useCart();
+
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -31,7 +39,9 @@ export default function Checkout() {
 
     const nuevoPedido = {
       items: cart,
-      total: totalPrice,
+      total: totalConDescuento,
+      cuponAplicado: cupon || null,
+      descuento: descuentoCupon || 0,
       fecha: serverTimestamp(),
       estado: "pendiente",
       metodoPago: formData.metodoPago,
@@ -43,13 +53,14 @@ export default function Checkout() {
     try {
       await addDoc(collection(db, "pedidos"), nuevoPedido);
       Swal.fire("✅ Pedido realizado", "Gracias por tu compra", "success");
-      toast.success("Pedido confirmado correctamente 🎉"); // ✅ TOAST
+      toast.success("Pedido confirmado correctamente 🎉");
       setCart([]);
+      limpiarCupon(); // ✅ Limpiar el descuento y cupón del carrito
       navigate("/");
     } catch (error) {
       console.error("Error al confirmar pedido:", error);
       Swal.fire("Error", "No se pudo realizar el pedido", "error");
-      toast.error("Error al confirmar el pedido 😓"); // ✅ TOAST
+      toast.error("Error al confirmar el pedido 😓");
     }
   };
 

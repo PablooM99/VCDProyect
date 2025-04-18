@@ -9,19 +9,21 @@ import { doc, getDoc } from "firebase/firestore";
 import { toast } from "react-toastify";
 
 export default function Carrito() {
-  const cartContext = useCart();
-  const { cart, removeFromCart, updateQuantity } = cartContext;
-  const setCart = cartContext.setCart;
+  const {
+    cart,
+    removeFromCart,
+    updateQuantity,
+    setCart,
+    cupon,
+    descuentoCupon,
+    totalPrice,
+    totalConDescuento,
+    aplicarCupon,
+    limpiarCupon,
+  } = useCart();
+
   const { user } = useAuth();
-
-  const [cupon, setCupon] = useState("");
-  const [descuento, setDescuento] = useState(0);
-
-  const totalOriginal = cart.reduce(
-    (acc, item) => acc + item.price * item.cantidad,
-    0
-  );
-  const totalConDescuento = totalOriginal - (totalOriginal * descuento) / 100;
+  const [cuponInput, setCuponInput] = useState("");
 
   useEffect(() => {
     localStorage.setItem("carrito", JSON.stringify(cart));
@@ -30,31 +32,34 @@ export default function Carrito() {
   const vaciarCarrito = () => {
     setCart([]);
     localStorage.removeItem("carrito");
+    limpiarCupon();
     Swal.fire("🧹 Carrito vaciado", "Tu carrito fue vaciado correctamente", "success");
   };
 
-  const aplicarCupon = async () => {
-    if (!cupon.trim()) return;
-
+  const handleAplicarCupon = async () => {
+    if (!cuponInput.trim()) return;
+  
     try {
-      const ref = doc(db, "cupones", cupon.toUpperCase());
+      const codigoCupon = cuponInput.toUpperCase(); // 💡 corregido
+      const ref = doc(db, "cupones", codigoCupon);
       const snap = await getDoc(ref);
-
+  
       if (!snap.exists()) {
         toast.error("❌ Cupón inválido");
-        setDescuento(0);
+        limpiarCupon();
         return;
       }
-
+  
       const data = snap.data();
-
+  
       if (!data.activo) {
         toast.warning("⚠️ Cupón no está activo");
-        setDescuento(0);
+        limpiarCupon();
         return;
       }
-
-      setDescuento(data.descuento || 0);
+  
+      aplicarCupon(codigoCupon, data.descuento || 0);
+      setCuponInput(""); // limpiar input
       toast.success(`🎉 Cupón aplicado: ${data.descuento}% de descuento`);
     } catch (error) {
       console.error("Error al verificar cupón:", error);
@@ -132,10 +137,10 @@ export default function Carrito() {
                 </li>
               ))}
             </ul>
-            {descuento > 0 && (
+            {descuentoCupon > 0 && (
               <div className="flex justify-between text-green-400 font-semibold">
-                <span>Descuento ({descuento}%)</span>
-                <span>- ${(totalOriginal - totalConDescuento).toFixed(2)}</span>
+                <span>Descuento ({descuentoCupon}%)</span>
+                <span>- ${(totalPrice - totalConDescuento).toFixed(2)}</span>
               </div>
             )}
             <div className="flex justify-between font-bold text-lg text-white border-t border-gray-700 pt-2">
@@ -149,11 +154,11 @@ export default function Carrito() {
               type="text"
               placeholder="Ingresar cupón de descuento"
               className="bg-gray-800 text-white px-4 py-2 rounded w-full md:w-auto"
-              value={cupon}
-              onChange={(e) => setCupon(e.target.value)}
+              value={cuponInput}
+              onChange={(e) => setCuponInput(e.target.value)}
             />
             <button
-              onClick={aplicarCupon}
+              onClick={handleAplicarCupon}
               className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white font-semibold"
             >
               Aplicar Cupón
@@ -175,7 +180,13 @@ export default function Carrito() {
                 Confirmar Pedido
               </Link>
               <button
-                onClick={() => Swal.fire("⚠️ Sin conexión a MercadoPago", "Esta funcionalidad se agregará próximamente", "info")}
+                onClick={() =>
+                  Swal.fire(
+                    "⚠️ Sin conexión a MercadoPago",
+                    "Esta funcionalidad se agregará próximamente",
+                    "info"
+                  )
+                }
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow"
               >
                 Pagar (MercadoPago)
