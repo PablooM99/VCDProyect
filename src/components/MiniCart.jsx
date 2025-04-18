@@ -15,15 +15,25 @@ export default function MiniCart({ onClose }) {
         ) : (
           <ul className="space-y-2">
             {lastThree.map((item) => (
-              <li key={item.id} className="flex items-center justify-between gap-2 border-b border-gray-700 pb-2">
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-white truncate">{item.title}</p>
+              <li
+                key={item.id}
+                className="flex items-center justify-between gap-2 border-b border-gray-700 pb-2"
+              >
+                <div className="flex-1 overflow-hidden">
+                  <p
+                    className="text-sm font-semibold text-white truncate"
+                    title={item.title}
+                  >
+                    {item.title}
+                  </p>
                   <div className="flex gap-2 items-center mt-1">
                     <input
                       type="number"
                       min={1}
                       value={item.cantidad}
-                      onChange={(e) => updateQuantity(item.id, Number(e.target.value))}
+                      onChange={(e) =>
+                        updateQuantity(item.id, Number(e.target.value))
+                      }
                       className="w-12 p-1 text-center bg-gray-800 text-white rounded"
                     />
                     <span className="text-sm text-gray-300">${item.price}</span>
@@ -31,7 +41,8 @@ export default function MiniCart({ onClose }) {
                 </div>
                 <button
                   onClick={() => removeFromCart(item.id)}
-                  className="text-red-500 hover:underline text-sm"
+                  className="text-red-500 hover:underline text-sm flex-shrink-0"
+                  title="Eliminar"
                 >
                   ✕
                 </button>

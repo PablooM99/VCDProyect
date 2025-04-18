@@ -31,11 +31,6 @@ firebase deploy
 
 ¡Listo! Tu app estará publicada en: https://vcdproyect.web.app
 
-
-Mejora del proceso de checkout: Formulario final antes de confirmar el pedido, con resumen, envío, etc.
-
-Dashboard con estadísticas para admin: Total de ventas, usuarios, ingresos mensuales, etc.
-
 Sistema de reseñas/comentarios por producto.
 
 Sistema de favoritos / wishlist por usuario.

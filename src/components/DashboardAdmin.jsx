@@ -10,23 +10,30 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const cargarDatos = async () => {
-      const pedidosSnap = await getDocs(collection(db, "pedidos"));
-      const usuariosSnap = await getDocs(collection(db, "usuarios"));
+      try {
+        const pedidosSnap = await getDocs(collection(db, "pedidos"));
+        const usuariosSnap = await getDocs(collection(db, "usuarios"));
 
-      const pedidosData = pedidosSnap.docs.map(doc => doc.data());
-      const usuariosData = usuariosSnap.docs.map(doc => doc.data());
+        const pedidosData = pedidosSnap.docs.map(doc => doc.data());
+        const usuariosData = usuariosSnap.docs.map(doc => doc.data());
 
-      setPedidos(pedidosData);
-      setUsuarios(usuariosData);
+        setPedidos(pedidosData);
+        setUsuarios(usuariosData);
 
-      const total = pedidosData.reduce((acc, p) => {
-        if (p.estado === "entregado") {
-          return acc + p.productos.reduce((sum, item) => sum + item.price * item.cantidad, 0);
-        }
-        return acc;
-      }, 0);
+        const total = pedidosData.reduce((acc, p) => {
+          if (p.estado === "entregado" && Array.isArray(p.productos)) {
+            return acc + p.productos.reduce((sum, item) => {
+              const cantidad = item.qty || item.cantidad || 1;
+              return sum + (item.price || 0) * cantidad;
+            }, 0);
+          }
+          return acc;
+        }, 0);
 
-      setIngresos(total);
+        setIngresos(total);
+      } catch (error) {
+        console.error("Error al cargar datos:", error);
+      }
     };
 
     cargarDatos();
@@ -34,6 +41,7 @@ export default function AdminDashboard() {
 
   const totalPedidos = pedidos.length;
   const pedidosPendientes = pedidos.filter(p => p.estado === "pendiente").length;
+  const pedidosPreparados = pedidos.filter(p => p.estado === "preparado").length;
   const pedidosEntregados = pedidos.filter(p => p.estado === "entregado").length;
 
   return (
@@ -59,6 +67,11 @@ export default function AdminDashboard() {
         <div className="bg-gray-900 p-6 rounded shadow">
           <h2 className="text-xl font-semibold text-amber-300">Pedidos Pendientes</h2>
           <p className="text-2xl font-bold mt-2 text-red-400">{pedidosPendientes}</p>
+        </div>
+
+        <div className="bg-gray-900 p-6 rounded shadow">
+          <h2 className="text-xl font-semibold text-amber-300">Pedidos Preparados</h2>
+          <p className="text-2xl font-bold mt-2 text-yellow-300">{pedidosPreparados}</p>
         </div>
 
         <div className="bg-gray-900 p-6 rounded shadow">

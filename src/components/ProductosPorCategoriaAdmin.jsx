@@ -1,10 +1,8 @@
-// src/components/ProductosPorCategoriaAdmin.jsx
 import { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/config";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-
 
 export default function ProductosPorCategoriaAdmin() {
   const [productos, setProductos] = useState([]);
@@ -42,10 +40,9 @@ export default function ProductosPorCategoriaAdmin() {
       y += 6;
       autoTable(doc, {
         head: [["ID", "Título", "Categoría", "Precio", "Stock"]],
-        body: productos.map((p) => [p.id, p.title, p.categoria, p.price, p.stock]),
-        startY: 20
+        body: items.map(p => [p.id, p.title, p.categoria, p.price, p.stock]),
+        startY: y,
       });
-      
       y = doc.lastAutoTable.finalY + 10;
     });
 
@@ -70,7 +67,10 @@ export default function ProductosPorCategoriaAdmin() {
           <table className="w-full text-sm mb-2">
             <thead className="text-amber-300">
               <tr>
-                <th>ID</th><th>Título</th><th>Precio</th><th>Stock</th>
+                <th>ID</th>
+                <th>Título</th>
+                <th>Precio</th>
+                <th>Stock</th>
               </tr>
             </thead>
             <tbody>

@@ -97,7 +97,7 @@ export default function UsuariosAdmin() {
                   </select>
                 </td>
                 <td>
-                  <button onClick={() => eliminarUsuario(u.id)} className="text-red-500 hover:underline">Eliminar</button>
+                  <button onClick={() => eliminarUsuario(u.id)} className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">Eliminar</button>
                 </td>
               </tr>
             ))}

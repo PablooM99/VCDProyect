@@ -26,13 +26,18 @@ export default function ProductDetail() {
   const [nuevoComentario, setNuevoComentario] = useState("");
   const [puedeComentar, setPuedeComentar] = useState(false);
   const [cantidad, setCantidad] = useState(1);
+  const [imagenActiva, setImagenActiva] = useState("");
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" }); // 👈 desplaza hacia arriba suavemente
+    
     const cargarProducto = async () => {
       const ref = doc(db, "productos", id);
       const snap = await getDoc(ref);
       if (snap.exists()) {
-        setProducto({ id: snap.id, ...snap.data() });
+        const data = { id: snap.id, ...snap.data() };
+        setProducto(data);
+        setImagenActiva(data.imageURL || "https://via.placeholder.com/300");
       }
     };
 
@@ -96,6 +101,8 @@ export default function ProductDetail() {
 
   if (!producto) return <p className="text-white">Cargando producto...</p>;
 
+  const imagenes = [producto.imageURL, ...(producto.imagenesAdicionales || [])];
+
   return (
     <motion.div
       className="p-4 text-white bg-gray-950 min-h-screen"
@@ -110,11 +117,29 @@ export default function ProductDetail() {
         transition={{ duration: 0.5 }}
       >
         <h2 className="text-2xl font-bold text-amber-400 mb-2">{producto.title}</h2>
+
+        {/* Imagen activa */}
         <img
-          src={producto.imageURL || "https://via.placeholder.com/300"}
+          src={imagenActiva}
           alt={producto.title}
           className="w-full max-w-md h-64 object-cover rounded bg-gray-900 mb-4"
         />
+
+        {/* Galería */}
+        {imagenes.length > 1 && (
+          <div className="flex gap-2 mb-4 overflow-x-auto">
+            {imagenes.map((img, idx) => (
+              <img
+                key={idx}
+                src={img}
+                onClick={() => setImagenActiva(img)}
+                className={`w-20 h-20 object-cover rounded border-2 cursor-pointer ${
+                  img === imagenActiva ? "border-amber-500" : "border-transparent"
+                }`}
+              />
+            ))}
+          </div>
+        )}
 
         <p><strong>Categoría:</strong> {producto.categoria}</p>
         <p><strong>Precio:</strong> ${producto.price}</p>

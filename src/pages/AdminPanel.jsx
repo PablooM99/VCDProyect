@@ -38,23 +38,6 @@ export default function AdminPanel() {
 
   if (isAdmin === null) return <p className="text-white">Verificando acceso...</p>;
 
-  const renderTabContent = () => {
-    switch (tab) {
-      case "dashboard":
-        return <DashboardAdmin />;
-      case "productos":
-        return <ProductoAdmin />;
-      case "pedidos":
-        return <PedidosAdmin />;
-      case "usuarios":
-        return <UsuariosAdmin />;
-      case "categorias":
-        return <ProductosPorCategoria />;
-      default:
-        return null;
-    }
-  };
-
   return (
     <div className="p-4 md:p-8 text-white bg-gray-950 min-h-screen">
       <h1 className="text-3xl font-bold text-white mb-6">🛠️ Panel de Administración</h1>
@@ -92,7 +75,13 @@ export default function AdminPanel() {
         </button>
       </div>
 
-      {renderTabContent()}
+      <div className="mt-6">
+        {tab === "dashboard" && <DashboardAdmin />}
+        {tab === "productos" && <ProductoAdmin />}
+        {tab === "pedidos" && <PedidosAdmin />}
+        {tab === "usuarios" && <UsuariosAdmin />}
+        {tab === "categorias" && <ProductosPorCategoria />}
+      </div>
     </div>
   );
 }

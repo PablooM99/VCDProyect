@@ -7,9 +7,9 @@ import AdminPanel from "./pages/AdminPanel";
 import UserPanel from "./pages/UserPanel";
 import AdminRoute from "./routes/AdminRoute";
 import NavBar from "./components/NavBar";
-import ProductosPorCategoria from "./components/ProductosPorCategoriaAdmin";
 import Checkout from "./pages/Checkout";
 import ProductDetail from "./pages/ProductDetail";
+import Favoritos from "./pages/Favoritos";
 
 export default function App() {
   return (
@@ -22,10 +22,10 @@ export default function App() {
         <Route path="/panel" element={<UserPanel />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/producto/:id" element={<ProductDetail />} />
+        <Route path="/favoritos" element={<Favoritos />} />
         <Route path="/admin" element={
           <AdminRoute>
             <AdminPanel />
-            <ProductosPorCategoria />
           </AdminRoute>
         } />
       </Routes>

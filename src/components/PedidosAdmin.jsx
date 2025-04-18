@@ -98,7 +98,7 @@ export default function PedidosAdmin() {
     XLSX.writeFile(wb, "pedidos.xlsx");
   };
 
-  const estadosEnvio = ["pendiente", "entregado"];
+  const estadosEnvio = ["pendiente", "preparado", "entregado"];
   const metodosPago = ["pendiente", "efectivo", "cheque", "echeq", "transferencia", "pagado (MercadoPago)"];
 
   const pedidosFiltrados = estadoFiltro
