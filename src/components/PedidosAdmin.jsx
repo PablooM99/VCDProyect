@@ -102,19 +102,21 @@ export default function PedidosAdmin() {
   const exportarPDF = () => {
     const doc = new jsPDF();
     doc.text("Reporte de Pedidos", 10, 10);
-    autoTable(doc, {
-      startY: 20,
-      head: [["ID", "Usuario", "Fecha", "Estado", "Método de Pago"]],
-      body: pedidos.map((p) => [
-        p.id,
-        p.usuario || "-",
-        p.fecha?.toDate?.().toLocaleString?.() || "-",
-        p.estado || "-",
-        p.metodoPago || "-",
-      ]),
-      theme: "grid",
-      styles: { fontSize: 10 },
-    });
+autoTable(doc, {
+  startY: 20,
+  head: [["ID", "Usuario", "Fecha", "Estado", "Método de Pago", "Cupón", "Descuento"]],
+  body: pedidos.map((p) => [
+    p.id,
+    p.usuario || "-",
+    p.fecha?.toDate?.().toLocaleString?.() || "-",
+    p.estado || "-",
+    p.metodoPago || "-",
+    p.cuponAplicado || "-",
+    `${p.descuento || 0}%`
+  ]),
+  theme: "grid",
+  styles: { fontSize: 10 }
+});
     doc.save("pedidos.pdf");
   };
 
@@ -125,7 +127,10 @@ export default function PedidosAdmin() {
       Fecha: p.fecha?.toDate?.().toLocaleString?.() || "-",
       Estado: p.estado || "-",
       MetodoPago: p.metodoPago || "-",
+      Cupon: p.cuponAplicado || "-",
+      Descuento: `${p.descuento || 0}%`
     }));
+    
     const hoja = XLSX.utils.json_to_sheet(datos);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, hoja, "Pedidos");
@@ -205,61 +210,57 @@ export default function PedidosAdmin() {
             </tr>
           </thead>
           <tbody>
-            {pedidosFiltrados.map((pedido) => (
-              <tr key={pedido.id} className="border-b border-gray-700">
-                <td>{pedido.id}</td>
-                <td>{pedido.usuario || "-"}</td>
-                <td>{pedido.fecha?.toDate?.().toLocaleString?.() || "-"}</td>
-                <td>
-                  <ul className="list-disc list-inside">
-                    {pedido.items?.map((item, idx) => (
-                      <li key={idx}>
-                        {item.title} x{item.qty}
-                      </li>
-                    ))}
-                  </ul>
-                </td>
-                <td>
-                  <select
-                    value={pedido.estado || ""}
-                    onChange={(e) =>
-                      actualizarCampo(pedido.id, "estado", e.target.value)
-                    }
-                    className="bg-gray-700 text-white px-2 py-1 rounded"
-                  >
-                    {estadosEnvio.map((estado) => (
-                      <option key={estado} value={estado}>
-                        {estado}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td>
-                  <select
-                    value={pedido.metodoPago || ""}
-                    onChange={(e) =>
-                      actualizarCampo(pedido.id, "metodoPago", e.target.value)
-                    }
-                    className="bg-gray-700 text-white px-2 py-1 rounded"
-                  >
-                    {metodosPago.map((metodo) => (
-                      <option key={metodo} value={metodo}>
-                        {metodo}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td>
-                  <button
-                    onClick={() => eliminarPedido(pedido.id)}
-                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
-                  >
-                    Borrar
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
+  {pedidosFiltrados.map((pedido) => (
+    <tr key={pedido.id} className="border-b border-gray-700">
+      <td>{pedido.id}</td>
+      <td>{pedido.usuario || "-"}</td>
+      <td>{pedido.fecha?.toDate?.().toLocaleString?.() || "-"}</td>
+      <td>
+        <ul className="list-disc list-inside">
+          {pedido.items?.map((item, idx) => (
+            <li key={idx}>{item.title} x{item.qty}</li>
+          ))}
+        </ul>
+        {pedido.cuponAplicado && (
+          <p className="mt-2 text-green-400 text-sm">
+            Cupón: <strong>{pedido.cuponAplicado}</strong> – {pedido.descuento}% OFF
+          </p>
+        )}
+      </td>
+      <td>
+        <select
+          value={pedido.estado || ""}
+          onChange={(e) => actualizarCampo(pedido.id, "estado", e.target.value)}
+          className="bg-gray-700 text-white px-2 py-1 rounded"
+        >
+          {estadosEnvio.map((estado) => (
+            <option key={estado} value={estado}>{estado}</option>
+          ))}
+        </select>
+      </td>
+      <td>
+        <select
+          value={pedido.metodoPago || ""}
+          onChange={(e) => actualizarCampo(pedido.id, "metodoPago", e.target.value)}
+          className="bg-gray-700 text-white px-2 py-1 rounded"
+        >
+          {metodosPago.map((metodo) => (
+            <option key={metodo} value={metodo}>{metodo}</option>
+          ))}
+        </select>
+      </td>
+      <td>
+        <button
+          onClick={() => eliminarPedido(pedido.id)}
+          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+        >
+          Borrar
+        </button>
+      </td>
+    </tr>
+  ))}
+</tbody>
+
         </table>
       </div>
     </div>

@@ -13,6 +13,7 @@ import Favoritos from "./pages/Favoritos";
 import Soporte from "./pages/Soporte";
 import CuponesAdmin from "./components/CuponesAdmin";
 import PedidosPendientesAdmin from "./components/PedidosPendientesAdmin";
+import PedidoDetalle from "./pages/PedidoDetalle";
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="/soporte" element={<Soporte />} />
         <Route path="/cupones" element={<CuponesAdmin />} />
         <Route path="/PedidosPendientes" element={<PedidosPendientesAdmin />} />
+        <Route path="/pedido/:id" element={<PedidoDetalle />} />
         <Route path="/admin" element={
           <AdminRoute>
             <AdminPanel />

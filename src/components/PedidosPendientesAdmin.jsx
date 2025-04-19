@@ -53,10 +53,8 @@ export default function PedidosPendientesAdmin() {
 
   const generarNombreArchivo = (extension) => {
     if (!filtroTexto) return `pedidos_pendientes.${extension}`;
-
-    const usuario = usuarios.find(
-      (u) =>
-        `${u.nombre} ${u.email}`.toLowerCase().includes(filtroTexto.toLowerCase())
+    const usuario = usuarios.find((u) =>
+      `${u.nombre} ${u.email}`.toLowerCase().includes(filtroTexto.toLowerCase())
     );
     const nombreArchivo = usuario?.nombre
       ? `pedidos_pendientes_${usuario.nombre.replace(/\s+/g, "_")}.${extension}`
@@ -67,10 +65,13 @@ export default function PedidosPendientesAdmin() {
   const exportarExcel = () => {
     const datos = pedidosFiltrados.map((p) => {
       const usuario = usuarios.find((u) => u.email === p.userEmail);
+      const totalSinDescuento = p.total / (1 - (p.descuento || 0) / 100);
       return {
         ID: p.id,
         Usuario: `${usuario?.nombre || ""} (${p.userEmail})`,
         Dirección: p.direccion || "Sin dirección",
+        "Total sin descuento": `$${totalSinDescuento.toFixed(2)}`,
+        "Cupón aplicado": p.cuponAplicado || "-",
         Total: `$${p.total?.toFixed(2) || 0}`,
         Fecha: p.fecha?.toDate().toLocaleString() || "Sin fecha",
       };
@@ -89,17 +90,20 @@ export default function PedidosPendientesAdmin() {
 
     const filas = pedidosFiltrados.map((p) => {
       const usuario = usuarios.find((u) => u.email === p.userEmail);
+      const totalSinDescuento = p.total / (1 - (p.descuento || 0) / 100);
       return [
         p.id,
         `${usuario?.nombre || ""} (${p.userEmail})`,
         p.direccion || "-",
+        `$${totalSinDescuento.toFixed(2)}`,
+        p.cuponAplicado || "-",
         `$${p.total?.toFixed(2) || 0}`,
         p.fecha?.toDate().toLocaleString() || "-",
       ];
     });
 
     autoTable(docu, {
-      head: [["ID", "Usuario", "Dirección", "Total", "Fecha"]],
+      head: [["ID", "Usuario", "Dirección", "Total sin desc.", "Cupón", "Total", "Fecha"]],
       body: filas,
       startY: 20,
     });
@@ -176,6 +180,8 @@ export default function PedidosPendientesAdmin() {
                 <th className="p-2 text-left">ID</th>
                 <th className="p-2 text-left">Usuario</th>
                 <th className="p-2 text-left">Dirección</th>
+                <th className="p-2 text-right">Total sin desc.</th>
+                <th className="p-2 text-left">Cupón</th>
                 <th className="p-2 text-right">Total</th>
                 <th className="p-2 text-left">Fecha</th>
               </tr>
@@ -183,11 +189,14 @@ export default function PedidosPendientesAdmin() {
             <tbody>
               {pedidosFiltrados.map((p) => {
                 const usuario = usuarios.find((u) => u.email === p.userEmail);
+                const totalSinDescuento = p.total / (1 - (p.descuento || 0) / 100);
                 return (
                   <tr key={p.id} className="border-t border-gray-700">
                     <td className="p-2">{p.id}</td>
                     <td className="p-2">{`${usuario?.nombre || ""} (${p.userEmail})`}</td>
                     <td className="p-2">{p.direccion}</td>
+                    <td className="p-2 text-right">${totalSinDescuento.toFixed(2)}</td>
+                    <td className="p-2">{p.cuponAplicado || "-"}</td>
                     <td className="p-2 text-right">${p.total?.toFixed(2)}</td>
                     <td className="p-2">{p.fecha?.toDate().toLocaleString()}</td>
                   </tr>

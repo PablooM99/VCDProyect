@@ -5,11 +5,11 @@ import { db, auth } from "../firebase/config";
 import { collection, getDocs, query, where, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import Swal from "sweetalert2";
-import { Link } from "react-router-dom";
-
+import { Link, useNavigate } from "react-router-dom";
 
 export default function UserPanel() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [nombre, setNombre] = useState(user?.displayName || "");
   const [email, setEmail] = useState(user?.email || "");
   const [cuit, setCuit] = useState("");
@@ -155,28 +155,44 @@ export default function UserPanel() {
         </form>
 
         <div className="mt-12">
-          <h2 className="text-2xl text-amber-300 font-semibold mb-4">📦 Mis pedidos</h2>
-          <div className="space-y-4">
-            {pedidos.map((pedido) => (
-              <div key={pedido.id} className="bg-gray-800 p-4 rounded shadow">
-                <p className="text-sm text-gray-300 mb-1">🆔 {pedido.id}</p>
-                <p className="text-sm text-gray-300 mb-1">📅 {pedido.fecha?.toDate().toLocaleString()}</p>
-                <p className="text-sm text-gray-300 mb-2">🔖 Estado: <span className="text-white font-semibold">{pedido.estado}</span></p>
-                <ul className="list-disc pl-5 mb-2">
-                  {pedido.productos?.map((item, i) => (
-                    <li key={i}>{item.title} x{item.cantidad}</li>
-                  ))}
-                </ul>
-                <button
-                  onClick={() => cancelarPedido(pedido.id)}
-                  className="bg-red-600 hover:bg-red-700 text-white text-sm py-1 px-3 rounded"
-                >
-                  Cancelar pedido
-                </button>
-              </div>
-            ))}
-          </div>
+  <h2 className="text-2xl text-amber-300 font-semibold mb-4">📦 Mis pedidos</h2>
+  <div className="space-y-4">
+    {pedidos.map((pedido) => (
+      <div key={pedido.id} className="bg-gray-800 p-4 rounded shadow">
+        <p className="text-sm text-purple-300 mb-1">🆔 {pedido.id}</p>
+        <p className="text-sm text-gray-300 mb-1">📅 {pedido.fecha?.toDate().toLocaleString()}</p>
+        <p className="text-sm text-gray-300 mb-2">
+          🏷️ Estado: <span className="text-white font-semibold">{pedido.estado}</span>
+        </p>
+
+        <ul className="list-disc pl-5 mb-3">
+          {(pedido.items || pedido.productos || []).map((item, i) => (
+            <li key={i}>
+              {item.title} x{item.cantidad || item.qty || 1}
+            </li>
+          ))}
+        </ul>
+
+
+        <div className="flex gap-3">
+          <button
+            onClick={() => cancelarPedido(pedido.id)}
+            className="bg-red-600 hover:bg-red-700 text-white text-sm py-1 px-3 rounded"
+          >
+            Cancelar pedido
+          </button>
+          <Link
+            to={`/pedido/${pedido.id}`}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-sm py-1 px-3 rounded"
+          >
+            Ver pedido
+          </Link>
         </div>
+      </div>
+    ))}
+  </div>
+</div>
+
       </div>
     </div>
   );
