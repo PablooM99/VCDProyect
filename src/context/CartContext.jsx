@@ -26,18 +26,30 @@ export function CartProvider({ children }) {
     localStorage.setItem("descuento", descuentoCupon.toString());
   }, [cupon, descuentoCupon]);
 
-  const addToCart = (producto) => {
+  const addToCart = (producto, cantidad = 1) => {
     setCart((prev) => {
-      const item = prev.find((p) => p.id === producto.id);
-      if (item) {
-        toast.info(`➕ Se agregó otra unidad de "${producto.title}"`);
-        return prev.map((p) =>
-          p.id === producto.id ? { ...p, cantidad: p.cantidad + 1 } : p
+      const itemExistente = prev.find((p) => p.id === producto.id);
+  
+      let nuevoCart;
+      if (itemExistente) {
+        nuevoCart = prev.map((p) =>
+          p.id === producto.id
+            ? { ...p, cantidad: p.cantidad + cantidad }
+            : p
         );
       } else {
-        toast.success(`🛒 Producto "${producto.title}" agregado al carrito`);
-        return [...prev, { ...producto, cantidad: 1 }];
+        nuevoCart = [...prev, { ...producto, cantidad }];
       }
+  
+      if (cantidad > 1) {
+        toast.success(`✅ Se agregaron ${cantidad} unidades de "${producto.title}"`);
+      } else if (itemExistente) {
+        toast.info(`➕ Se agregó otra unidad de "${producto.title}"`);
+      } else {
+        toast.success(`🛒 Producto "${producto.title}" agregado al carrito`);
+      }
+  
+      return nuevoCart;
     });
   };
 

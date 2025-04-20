@@ -3,7 +3,14 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { db } from "../firebase/config";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  getDoc,
+  doc,
+  setDoc,
+} from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
@@ -15,7 +22,7 @@ export default function Checkout() {
     setCart,
     cupon,
     descuentoCupon,
-    limpiarCupon
+    limpiarCupon,
   } = useCart();
 
   const { user } = useAuth();
@@ -25,7 +32,7 @@ export default function Checkout() {
     nombre: user?.displayName || "",
     email: user?.email || "",
     direccion: "",
-    metodoPago: "efectivo"
+    metodoPago: "efectivo",
   });
 
   const handleChange = (e) => {
@@ -37,25 +44,73 @@ export default function Checkout() {
       return Swal.fire("Error", "Completa todos los campos", "error");
     }
 
-    const nuevoPedido = {
-      items: cart,
-      total: totalConDescuento,
-      cuponAplicado: cupon || null,
-      descuento: descuentoCupon || 0,
-      fecha: serverTimestamp(),
-      estado: "pendiente",
-      metodoPago: formData.metodoPago,
-      direccion: formData.direccion,
-      userEmail: formData.email,
-      userId: user?.uid || null
-    };
-
     try {
+      // 🔒 Verificar si el cupón ya fue usado por este usuario si es de un solo uso
+      if (cupon && user?.uid) {
+        const cuponRef = doc(db, "cupones", cupon);
+        const cuponSnap = await getDoc(cuponRef);
+
+        if (cuponSnap.exists()) {
+          const cuponData = cuponSnap.data();
+          if (cuponData.soloUnUso) {
+            const usadoRef = doc(
+              db,
+              "usuarios",
+              user.uid,
+              "cupones_usados",
+              cupon
+            );
+            const usadoSnap = await getDoc(usadoRef);
+            if (usadoSnap.exists()) {
+              return Swal.fire(
+                "Cupón ya utilizado",
+                "Este cupón solo puede ser usado una vez por usuario.",
+                "warning"
+              );
+            }
+          }
+        }
+      }
+
+      const nuevoPedido = {
+        items: cart,
+        total: totalConDescuento,
+        cuponAplicado: cupon || null,
+        descuento: descuentoCupon || 0,
+        fecha: serverTimestamp(),
+        estado: "pendiente",
+        metodoPago: formData.metodoPago,
+        direccion: formData.direccion,
+        userEmail: formData.email,
+        userId: user?.uid || null,
+      };
+
+      // 📦 Guardar el pedido
       await addDoc(collection(db, "pedidos"), nuevoPedido);
+
+      // 🧠 Registrar el cupón como usado si aplica
+      if (cupon && user?.uid) {
+        const cuponRef = doc(db, "cupones", cupon);
+        const cuponSnap = await getDoc(cuponRef);
+        if (cuponSnap.exists() && cuponSnap.data().soloUnUso) {
+          const usadoRef = doc(
+            db,
+            "usuarios",
+            user.uid,
+            "cupones_usados",
+            cupon
+          );
+          await setDoc(usadoRef, {
+            usado: true,
+            fecha: serverTimestamp(),
+          });
+        }
+      }
+
       Swal.fire("✅ Pedido realizado", "Gracias por tu compra", "success");
       toast.success("Pedido confirmado correctamente 🎉");
       setCart([]);
-      limpiarCupon(); // ✅ Limpiar el descuento y cupón del carrito
+      limpiarCupon();
       navigate("/");
     } catch (error) {
       console.error("Error al confirmar pedido:", error);
@@ -67,7 +122,9 @@ export default function Checkout() {
   return (
     <div className="p-6 text-white min-h-screen bg-gray-950">
       <div className="p-6 max-w-2xl mx-auto bg-gray-900 text-white rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold mb-6 text-amber-400">📝 Confirmar Pedido</h1>
+        <h1 className="text-2xl font-bold mb-6 text-amber-400">
+          📝 Confirmar Pedido
+        </h1>
         <div className="space-y-4">
           <div>
             <label className="block text-sm">Nombre</label>

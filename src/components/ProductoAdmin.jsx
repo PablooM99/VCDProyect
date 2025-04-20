@@ -13,6 +13,7 @@ import {
   getDownloadURL,
 } from "firebase/storage";
 import * as XLSX from "xlsx";
+import Swal from "sweetalert2";
 
 export default function ProductoAdmin() {
   const [productos, setProductos] = useState([]);
@@ -103,7 +104,9 @@ export default function ProductoAdmin() {
       imageUrls,
     } = nuevoProducto;
 
-    if (!id || !title) return alert("Faltan datos obligatorios");
+    if (!id || !title) {
+      return Swal.fire("❌ Faltan datos obligatorios", "ID y título son requeridos", "warning");
+    }
 
     try {
       let imageArray = [...imageUrls];
@@ -121,7 +124,8 @@ export default function ProductoAdmin() {
       const nuevos = [...productos, nuevo];
       setProductos(nuevos);
       calcularMetricas(nuevos);
-      alert("✅ Producto agregado con éxito.");
+
+      Swal.fire("✅ Producto agregado con éxito", "", "success");
 
       setNuevoProducto({
         id: "",
@@ -232,6 +236,17 @@ export default function ProductoAdmin() {
         <div className="bg-gray-900 p-4 rounded"><h4>Promedio</h4><p className="text-xl font-bold">${metricas.promedioPrecio.toFixed(2)}</p></div>
         <div className="bg-gray-900 p-4 rounded"><h4>Sin Stock</h4><p className="text-xl font-bold">{metricas.productosSinStock}</p></div>
         <div className="bg-gray-900 p-4 rounded"><h4>Top Categoría</h4><p className="text-xl font-bold">{metricas.categoriaTop}</p></div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end mb-8 bg-gray-900 p-4 rounded">
+        <input type="text" name="id" value={nuevoProducto.id} onChange={handleNuevoChange} placeholder="ID" className="bg-gray-700 text-white p-2 rounded w-full" />
+        <input type="text" name="title" value={nuevoProducto.title} onChange={handleNuevoChange} placeholder="Título" className="bg-gray-700 text-white p-2 rounded w-full" />
+        <input type="number" name="price" value={nuevoProducto.price} onChange={handleNuevoChange} placeholder="Precio" className="bg-gray-700 text-white p-2 rounded w-full" />
+        <input type="number" name="stock" value={nuevoProducto.stock} onChange={handleNuevoChange} placeholder="Stock" className="bg-gray-700 text-white p-2 rounded w-full" />
+        <input type="text" name="categoria" value={nuevoProducto.categoria} onChange={handleNuevoChange} placeholder="Categoría" className="bg-gray-700 text-white p-2 rounded w-full" />
+        <input type="text" name="imageUrls" placeholder="URLs (separadas por coma)" onChange={handleNuevoChange} className="bg-gray-700 text-white p-2 rounded w-full" />
+        <input type="file" name="imageFiles" multiple accept="image/*" onChange={handleNuevoChange} className="text-sm" />
+        <button onClick={agregarProducto} className="bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 rounded font-bold mt-2 md:mt-0">➕ Agregar Producto</button>
       </div>
 
       <div className="flex flex-wrap gap-3 mb-6">

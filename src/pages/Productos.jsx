@@ -62,10 +62,9 @@ export default function Productos() {
 
   const agregarAlCarrito = (producto) => {
     const cantidad = cantidades[producto.id] || 1;
-    for (let i = 0; i < cantidad; i++) {
-      addToCart(producto);
-    }
+    addToCart(producto, cantidad);
   };
+  
 
   const exportarExcel = () => {
     const datosParaExcel = productos.map((p) => ({
@@ -178,12 +177,10 @@ export default function Productos() {
             transition={{ duration: 0.3 }}
           >
             <img
-              src={
-                prod.imageURLs?.[0] || prod.imageURL || "https://via.placeholder.com/150"
-              }
+              src={prod.imageURLs?.[0] || prod.imageURL || "https://via.placeholder.com/150"}
               alt={prod.title}
               loading="lazy"
-              className="w-full h-48 object-cover bg-gray-900 rounded mb-2"
+              className="w-full h-48 object-contain bg-gray-900 rounded mb-2"
             />
             <button
               onClick={() => toggleFavorito(prod)}

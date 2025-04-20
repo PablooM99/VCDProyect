@@ -4,6 +4,7 @@ import { db } from "../firebase/config";
 import {
   collection,
   addDoc,
+  getDocs,
   onSnapshot,
   query,
   orderBy,
@@ -49,7 +50,7 @@ export default function Soporte() {
 
   const enviarMensaje = async () => {
     if (!mensaje.trim()) return;
-
+  
     try {
       await addDoc(collection(db, "soporte", user.uid, "mensajes"), {
         mensaje,
@@ -58,7 +59,25 @@ export default function Soporte() {
         leido: false,
         timestamp: serverTimestamp()
       });
-
+  
+      // 🔔 Notificar a los admins
+      const usuariosSnap = await getDocs(collection(db, "usuarios"));
+      const admins = usuariosSnap.docs.filter(d => d.data().rol === "admin");
+  
+      const noti = {
+        titulo: "📨 Nuevo mensaje de soporte",
+        descripcion: `${user.displayName || user.email} te envió un mensaje de soporte`,
+        leido: false,
+        timestamp: serverTimestamp(),
+        tipo: "soporte",
+        redireccion: "/admin/soporte"
+      };
+  
+      for (const admin of admins) {
+        const adminId = admin.id;
+        await addDoc(collection(db, "usuarios", adminId, "notificaciones"), noti);
+      }
+  
       setMensaje("");
       setTimeout(() => {
         chatEndRef.current?.scrollIntoView({ behavior: "smooth" });

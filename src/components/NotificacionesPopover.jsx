@@ -10,6 +10,7 @@ import {
   query,
 } from "firebase/firestore";
 import { FaBell, FaTrash } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 
 export default function NotificacionesPopover() {
   const { user } = useAuth();
@@ -36,6 +37,8 @@ export default function NotificacionesPopover() {
   const eliminarNotificacion = async (id) => {
     await deleteDoc(doc(db, "usuarios", user.uid, "notificaciones", id));
   };
+
+  const navigate = useNavigate();
 
   const eliminarTodas = async () => {
     const promises = notificaciones.map((n) =>
@@ -86,21 +89,32 @@ export default function NotificacionesPopover() {
           ) : (
             <ul className="divide-y divide-gray-700">
               {notificaciones.map((n) => (
-                <li key={n.id} className="p-3 text-sm text-white flex justify-between">
-                  <div>
-                    <p className="text-white">{n.descripcion || n.titulo}</p>
-                    <p className="text-gray-400 text-xs">
-                      {new Date(n.timestamp?.seconds * 1000).toLocaleString()}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => eliminarNotificacion(n.id)}
-                    className="text-red-400 hover:text-red-600 ml-2"
-                    title="Eliminar"
-                  >
-                    <FaTrash />
-                  </button>
-                </li>
+                <li
+                key={n.id}
+                className="p-3 text-sm text-white flex justify-between hover:bg-gray-700 cursor-pointer"
+                onClick={() => {
+                  if (n.redireccion) {
+                    navigate(n.redireccion);
+                  }
+                }}
+              >
+                <div>
+                  <p className="text-white">{n.descripcion || n.titulo}</p>
+                  <p className="text-gray-400 text-xs">
+                    {new Date(n.timestamp?.seconds * 1000).toLocaleString()}
+                  </p>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    eliminarNotificacion(n.id);
+                  }}
+                  className="text-red-400 hover:text-red-600 ml-2"
+                  title="Eliminar"
+                >
+                  <FaTrash />
+                </button>
+              </li>
               ))}
             </ul>
           )}

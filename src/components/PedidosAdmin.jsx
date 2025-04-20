@@ -20,6 +20,8 @@ import { enviarNotificacion } from "../utils/notificacionesService";
 export default function PedidosAdmin() {
   const [pedidos, setPedidos] = useState([]);
   const [estadoFiltro, setEstadoFiltro] = useState("");
+  const [modalVisible, setModalVisible] = useState(false);
+  const [detalleProductos, setDetalleProductos] = useState([]);
 
   useEffect(() => {
     const fetchPedidos = async () => {
@@ -102,21 +104,21 @@ export default function PedidosAdmin() {
   const exportarPDF = () => {
     const doc = new jsPDF();
     doc.text("Reporte de Pedidos", 10, 10);
-autoTable(doc, {
-  startY: 20,
-  head: [["ID", "Usuario", "Fecha", "Estado", "Método de Pago", "Cupón", "Descuento"]],
-  body: pedidos.map((p) => [
-    p.id,
-    p.usuario || "-",
-    p.fecha?.toDate?.().toLocaleString?.() || "-",
-    p.estado || "-",
-    p.metodoPago || "-",
-    p.cuponAplicado || "-",
-    `${p.descuento || 0}%`
-  ]),
-  theme: "grid",
-  styles: { fontSize: 10 }
-});
+    autoTable(doc, {
+      startY: 20,
+      head: [["ID", "Usuario", "Fecha", "Estado", "Método de Pago", "Cupón", "Descuento"]],
+      body: pedidos.map((p) => [
+        p.id,
+        p.usuario || "-",
+        p.fecha?.toDate?.().toLocaleString?.() || "-",
+        p.estado || "-",
+        p.metodoPago || "-",
+        p.cuponAplicado || "-",
+        `${p.descuento || 0}%`
+      ]),
+      theme: "grid",
+      styles: { fontSize: 10 }
+    });
     doc.save("pedidos.pdf");
   };
 
@@ -130,7 +132,7 @@ autoTable(doc, {
       Cupon: p.cuponAplicado || "-",
       Descuento: `${p.descuento || 0}%`
     }));
-    
+
     const hoja = XLSX.utils.json_to_sheet(datos);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, hoja, "Pedidos");
@@ -153,12 +155,15 @@ autoTable(doc, {
       )
     : pedidos;
 
+  const abrirModalProductos = (items, cupon, descuento) => {
+    setDetalleProductos({ items, cupon, descuento });
+    setModalVisible(true);
+  };
+
   return (
     <div className="bg-gray-800 text-white p-4 rounded">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-amber-400">
-          📦 Gestión de Pedidos
-        </h2>
+        <h2 className="text-xl font-bold text-amber-400">📦 Gestión de Pedidos</h2>
         <div className="flex gap-2">
           <button
             onClick={exportarPDF}
@@ -210,59 +215,91 @@ autoTable(doc, {
             </tr>
           </thead>
           <tbody>
-  {pedidosFiltrados.map((pedido) => (
-    <tr key={pedido.id} className="border-b border-gray-700">
-      <td>{pedido.id}</td>
-      <td>{pedido.usuario || "-"}</td>
-      <td>{pedido.fecha?.toDate?.().toLocaleString?.() || "-"}</td>
-      <td>
-        <ul className="list-disc list-inside">
-          {pedido.items?.map((item, idx) => (
-            <li key={idx}>{item.title} x{item.qty}</li>
-          ))}
-        </ul>
-        {pedido.cuponAplicado && (
-          <p className="mt-2 text-green-400 text-sm">
-            Cupón: <strong>{pedido.cuponAplicado}</strong> – {pedido.descuento}% OFF
-          </p>
-        )}
-      </td>
-      <td>
-        <select
-          value={pedido.estado || ""}
-          onChange={(e) => actualizarCampo(pedido.id, "estado", e.target.value)}
-          className="bg-gray-700 text-white px-2 py-1 rounded"
-        >
-          {estadosEnvio.map((estado) => (
-            <option key={estado} value={estado}>{estado}</option>
-          ))}
-        </select>
-      </td>
-      <td>
-        <select
-          value={pedido.metodoPago || ""}
-          onChange={(e) => actualizarCampo(pedido.id, "metodoPago", e.target.value)}
-          className="bg-gray-700 text-white px-2 py-1 rounded"
-        >
-          {metodosPago.map((metodo) => (
-            <option key={metodo} value={metodo}>{metodo}</option>
-          ))}
-        </select>
-      </td>
-      <td>
-        <button
-          onClick={() => eliminarPedido(pedido.id)}
-          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
-        >
-          Borrar
-        </button>
-      </td>
-    </tr>
-  ))}
-</tbody>
-
+            {pedidosFiltrados.map((pedido) => (
+              <tr key={pedido.id} className="border-b border-gray-700">
+                <td>{pedido.id}</td>
+                <td>{pedido.usuario || "-"}</td>
+                <td>{pedido.fecha?.toDate?.().toLocaleString?.() || "-"}</td>
+                <td>
+                  <button
+                    onClick={() =>
+                      abrirModalProductos(pedido.items, pedido.cuponAplicado, pedido.descuento)
+                    }
+                    className="text-amber-300 underline hover:text-amber-400"
+                  >
+                    {pedido.items?.length || 0} productos
+                  </button>
+                </td>
+                <td>
+                  <select
+                    value={pedido.estado || ""}
+                    onChange={(e) =>
+                      actualizarCampo(pedido.id, "estado", e.target.value)
+                    }
+                    className="bg-gray-700 text-white px-2 py-1 rounded"
+                  >
+                    {estadosEnvio.map((estado) => (
+                      <option key={estado} value={estado}>
+                        {estado}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+                <td>
+                  <select
+                    value={pedido.metodoPago || ""}
+                    onChange={(e) =>
+                      actualizarCampo(pedido.id, "metodoPago", e.target.value)
+                    }
+                    className="bg-gray-700 text-white px-2 py-1 rounded"
+                  >
+                    {metodosPago.map((metodo) => (
+                      <option key={metodo} value={metodo}>
+                        {metodo}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+                <td>
+                  <button
+                    onClick={() => eliminarPedido(pedido.id)}
+                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+                  >
+                    Borrar
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
         </table>
       </div>
+
+      {modalVisible && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="bg-gray-900 p-6 rounded-lg max-w-lg w-full relative">
+            <h3 className="text-lg text-amber-400 font-semibold mb-4">🧾 Detalle del Pedido</h3>
+            <ul className="list-disc list-inside text-sm mb-4 text-white">
+              {detalleProductos.items?.map((item, idx) => (
+                <li key={idx}>
+                  {item.title} x{item.qty || item.cantidad}
+                </li>
+              ))}
+            </ul>
+            {detalleProductos.cupon && (
+              <p className="text-green-400 text-sm">
+                Cupón aplicado: <strong>{detalleProductos.cupon}</strong> –{" "}
+                {detalleProductos.descuento}% OFF
+              </p>
+            )}
+            <button
+              onClick={() => setModalVisible(false)}
+              className="absolute top-2 right-3 text-white text-xl hover:text-red-500"
+            >
+              ✖
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

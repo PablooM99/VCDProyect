@@ -14,6 +14,7 @@ export default function CuponesAdmin() {
   const [cupones, setCupones] = useState([]);
   const [codigo, setCodigo] = useState("");
   const [descuento, setDescuento] = useState("");
+  const [soloUnaVez, setSoloUnaVez] = useState(false); // ✅ NUEVO
 
   const cargarCupones = async () => {
     const snap = await getDocs(collection(db, "cupones"));
@@ -33,10 +34,12 @@ export default function CuponesAdmin() {
     await setDoc(doc(db, "cupones", cuponID), {
       descuento: Number(descuento),
       activo: true,
+      soloUnaVez: soloUnaVez, // ✅ Guardar en Firestore
     });
 
     setCodigo("");
     setDescuento("");
+    setSoloUnaVez(false); // ✅ Reiniciar casilla
     cargarCupones();
     Swal.fire("✅ Cupón creado correctamente", "", "success");
   };
@@ -80,6 +83,14 @@ export default function CuponesAdmin() {
           onChange={(e) => setDescuento(e.target.value)}
           className="bg-gray-800 p-2 rounded text-white"
         />
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={soloUnaVez}
+            onChange={(e) => setSoloUnaVez(e.target.checked)}
+          />
+          Solo un uso por usuario
+        </label>
         <button
           onClick={crearCupon}
           className="bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 rounded"
@@ -93,21 +104,29 @@ export default function CuponesAdmin() {
           <thead className="text-amber-300">
             <tr>
               <th className="p-2 text-left">Código</th>
-              <th className="p-2">Descuento (%)</th>
-              <th className="p-2">Estado</th>
-              <th className="p-2">Acciones</th>
+              <th className="p-2 text-center">Descuento (%)</th>
+              <th className="p-2 text-center">Estado</th>
+              <th className="p-2 text-center">Tipo</th>
+              <th className="p-2 text-center">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {cupones.map((c) => (
               <tr key={c.id} className="border-t border-gray-700">
-                <td className="p-2 font-semibold">{c.id}</td> {/* 👈 Mostrar ID como código */}
+                <td className="p-2 font-semibold">{c.id}</td>
                 <td className="p-2 text-center">{c.descuento}</td>
                 <td className="p-2 text-center">
                   {c.activo ? (
                     <span className="text-green-400 font-semibold">Activo</span>
                   ) : (
                     <span className="text-red-400 font-semibold">Inactivo</span>
+                  )}
+                </td>
+                <td className="p-2 text-center">
+                  {c.soloUnaVez ? (
+                    <span className="text-yellow-400 text-xs font-semibold">🔒 1 uso por usuario</span>
+                  ) : (
+                    <span className="text-gray-400 text-xs">♻️ Reutilizable</span>
                   )}
                 </td>
                 <td className="p-2 flex gap-2 justify-center">
@@ -124,6 +143,20 @@ export default function CuponesAdmin() {
                     Eliminar
                   </button>
                 </td>
+                {c.soloUnaVez && c.usadoPor?.length > 0 && (
+                  <tr className="border-b border-gray-700">
+                    <td colSpan="4" className="p-2 text-sm text-gray-300">
+                      <strong className="text-amber-400">Usado por:</strong>
+                      <ul className="list-disc list-inside mt-1">
+                        {c.usadoPor.map((u, idx) => (
+                          <li key={idx}>
+                            {u.nombre} ({u.id})
+                          </li>
+                        ))}
+                      </ul>
+                    </td>
+                  </tr>
+                )}
               </tr>
             ))}
           </tbody>
