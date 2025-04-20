@@ -16,14 +16,16 @@ export default function NotificacionesPopover() {
   const { user } = useAuth();
   const [notificaciones, setNotificaciones] = useState([]);
   const [open, setOpen] = useState(false);
-  const refPop = useRef();
+  const refPopover = useRef(null);
+  const navigate = useNavigate();
 
+  // 📦 Escuchar notificaciones en tiempo real
   useEffect(() => {
     if (!user) return;
 
     const q = query(
       collection(db, "usuarios", user.uid, "notificaciones"),
-      orderBy("timestamp", "desc") // CAMBIO: orden por timestamp
+      orderBy("timestamp", "desc")
     );
 
     const unsub = onSnapshot(q, (snap) => {
@@ -34,33 +36,37 @@ export default function NotificacionesPopover() {
     return () => unsub();
   }, [user]);
 
+  // 🗑️ Eliminar una notificación
   const eliminarNotificacion = async (id) => {
     await deleteDoc(doc(db, "usuarios", user.uid, "notificaciones", id));
   };
 
-  const navigate = useNavigate();
-
+  // 🧹 Eliminar todas
   const eliminarTodas = async () => {
-    const promises = notificaciones.map((n) =>
+    const promesas = notificaciones.map((n) =>
       deleteDoc(doc(db, "usuarios", user.uid, "notificaciones", n.id))
     );
-    await Promise.all(promises);
+    await Promise.all(promesas);
   };
 
+  // ❌ Cerrar al hacer clic afuera
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (refPop.current && !refPop.current.contains(e.target)) {
+      if (refPopover.current && !refPopover.current.contains(e.target)) {
         setOpen(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
   return (
-    <div className="relative" ref={refPop}>
+    <div className="relative" ref={refPopover}>
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          // Evitamos que se cierre inmediatamente por el efecto
+          setTimeout(() => setOpen((prev) => !prev), 0);
+        }}
         className="relative text-white hover:text-amber-400"
       >
         <FaBell size={22} />
@@ -90,31 +96,31 @@ export default function NotificacionesPopover() {
             <ul className="divide-y divide-gray-700">
               {notificaciones.map((n) => (
                 <li
-                key={n.id}
-                className="p-3 text-sm text-white flex justify-between hover:bg-gray-700 cursor-pointer"
-                onClick={() => {
-                  if (n.redireccion) {
-                    navigate(n.redireccion);
-                  }
-                }}
-              >
-                <div>
-                  <p className="text-white">{n.descripcion || n.titulo}</p>
-                  <p className="text-gray-400 text-xs">
-                    {new Date(n.timestamp?.seconds * 1000).toLocaleString()}
-                  </p>
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    eliminarNotificacion(n.id);
+                  key={n.id}
+                  className="p-3 text-sm text-white flex justify-between hover:bg-gray-700 cursor-pointer"
+                  onClick={() => {
+                    if (n.redireccion) {
+                      navigate(n.redireccion);
+                    }
                   }}
-                  className="text-red-400 hover:text-red-600 ml-2"
-                  title="Eliminar"
                 >
-                  <FaTrash />
-                </button>
-              </li>
+                  <div>
+                    <p className="text-white">{n.descripcion || n.titulo}</p>
+                    <p className="text-gray-400 text-xs">
+                      {new Date(n.timestamp?.seconds * 1000).toLocaleString()}
+                    </p>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      eliminarNotificacion(n.id);
+                    }}
+                    className="text-red-400 hover:text-red-600 ml-2"
+                    title="Eliminar"
+                  >
+                    <FaTrash />
+                  </button>
+                </li>
               ))}
             </ul>
           )}
