@@ -5,6 +5,7 @@ import {
   updateDoc,
   doc,
   getDocs,
+  getDoc,
   setDoc,
 } from "firebase/firestore";
 import { db } from "../firebase/config";
@@ -52,17 +53,35 @@ export default function CuponesAdmin() {
   const eliminarCupon = async (id) => {
     const confirm = await Swal.fire({
       title: "¿Eliminar cupón?",
-      text: "Esta acción no se puede deshacer",
+      text: "Esta acción no se puede deshacer y se eliminará de los usuarios que lo hayan usado.",
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Sí, eliminar",
     });
     if (!confirm.isConfirmed) return;
-
-    await deleteDoc(doc(db, "cupones", id));
-    cargarCupones();
-    Swal.fire("✅ Cupón eliminado", "", "success");
+  
+    try {
+      // Eliminar cupón del sistema
+      await deleteDoc(doc(db, "cupones", id));
+  
+      // Buscar todos los usuarios
+      const usuariosSnap = await getDocs(collection(db, "usuarios"));
+      for (const usuario of usuariosSnap.docs) {
+        const usadoRef = doc(db, "usuarios", usuario.id, "cupones_usados", id);
+        const usadoSnap = await getDoc(usadoRef);
+        if (usadoSnap.exists()) {
+          await deleteDoc(usadoRef); // eliminar si existe
+        }
+      }
+  
+      await cargarCupones(); // refrescar lista
+      Swal.fire("✅ Cupón eliminado", "Y también eliminado de los usuarios", "success");
+    } catch (err) {
+      console.error("Error al eliminar cupón y sus rastros:", err);
+      Swal.fire("Error", "No se pudo eliminar completamente el cupón", "error");
+    }
   };
+  
 
   return (
     <div className="text-white p-4 bg-gray-950 min-h-screen">

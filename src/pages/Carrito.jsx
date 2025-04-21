@@ -40,7 +40,7 @@ export default function Carrito() {
     if (!cuponInput.trim()) return;
   
     try {
-      const codigoCupon = cuponInput.toUpperCase(); // 💡 corregido
+      const codigoCupon = cuponInput.toUpperCase();
       const ref = doc(db, "cupones", codigoCupon);
       const snap = await getDoc(ref);
   
@@ -58,14 +58,27 @@ export default function Carrito() {
         return;
       }
   
+      // 💡 Verificación de uso único por usuario
+      if (data.soloUnaVez && user?.uid) {
+        const usadoRef = doc(db, "usuarios", user.uid, "cupones_usados", codigoCupon);
+        const usadoSnap = await getDoc(usadoRef);
+  
+        if (usadoSnap.exists()) {
+          toast.warning("⚠️ Ya usaste este cupón, es válido solo una vez");
+          limpiarCupon();
+          return;
+        }
+      }
+  
       aplicarCupon(codigoCupon, data.descuento || 0);
-      setCuponInput(""); // limpiar input
+      setCuponInput("");
       toast.success(`🎉 Cupón aplicado: ${data.descuento}% de descuento`);
     } catch (error) {
       console.error("Error al verificar cupón:", error);
       toast.error("❌ Error al validar el cupón");
     }
   };
+  
 
   return (
     <div className="p-6 text-white min-h-screen bg-gray-950">

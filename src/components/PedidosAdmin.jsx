@@ -20,6 +20,7 @@ import { enviarNotificacion } from "../utils/notificacionesService";
 export default function PedidosAdmin() {
   const [pedidos, setPedidos] = useState([]);
   const [estadoFiltro, setEstadoFiltro] = useState("");
+  const [busqueda, setBusqueda] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
   const [detalleProductos, setDetalleProductos] = useState([]);
 
@@ -149,11 +150,19 @@ export default function PedidosAdmin() {
     "pagado (MercadoPago)",
   ];
 
-  const pedidosFiltrados = estadoFiltro
-    ? pedidos.filter(
-        (p) => p.estado === estadoFiltro || p.metodoPago === estadoFiltro
-      )
-    : pedidos;
+  const pedidosFiltrados = pedidos.filter((p) => {
+    const coincideEstado = estadoFiltro
+      ? p.estado === estadoFiltro || p.metodoPago === estadoFiltro
+      : true;
+
+    const termino = busqueda.toLowerCase();
+    const coincideBusqueda =
+      p.id.toLowerCase().includes(termino) ||
+      p.usuario?.toLowerCase().includes(termino) ||
+      p.fecha?.toDate?.().toLocaleString?.().toLowerCase().includes(termino);
+
+    return coincideEstado && coincideBusqueda;
+  });
 
   const abrirModalProductos = (items, cupon, descuento) => {
     setDetalleProductos({ items, cupon, descuento });
@@ -193,11 +202,23 @@ export default function PedidosAdmin() {
             </option>
           ))}
         </select>
+
+        <input
+          type="text"
+          placeholder="Buscar por ID, usuario o fecha"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="bg-gray-700 text-white px-3 py-2 rounded w-72"
+        />
+
         <button
-          onClick={() => setEstadoFiltro("")}
+          onClick={() => {
+            setEstadoFiltro("");
+            setBusqueda("");
+          }}
           className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded"
         >
-          Limpiar Filtro
+          Limpiar Filtros
         </button>
       </div>
 

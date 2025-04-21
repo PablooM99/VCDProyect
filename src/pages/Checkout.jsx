@@ -32,7 +32,7 @@ export default function Checkout() {
     nombre: user?.displayName || "",
     email: user?.email || "",
     direccion: "",
-    metodoPago: "efectivo",
+    metodoPago: "pendiente",
   });
 
   const handleChange = (e) => {
@@ -40,27 +40,23 @@ export default function Checkout() {
   };
 
   const confirmarPedido = async () => {
-    if (!formData.direccion || !formData.metodoPago) {
+    if (!formData.direccion) {
       return Swal.fire("Error", "Completa todos los campos", "error");
     }
 
     try {
-      // 🔒 Verificar si el cupón ya fue usado por este usuario si es de un solo uso
+      // 🔒 Validar cupón de un solo uso
       if (cupon && user?.uid) {
         const cuponRef = doc(db, "cupones", cupon);
         const cuponSnap = await getDoc(cuponRef);
 
         if (cuponSnap.exists()) {
           const cuponData = cuponSnap.data();
-          if (cuponData.soloUnUso) {
-            const usadoRef = doc(
-              db,
-              "usuarios",
-              user.uid,
-              "cupones_usados",
-              cupon
-            );
+
+          if (cuponData.soloUnaVez) {
+            const usadoRef = doc(db, "usuarios", user.uid, "cupones_usados", cupon);
             const usadoSnap = await getDoc(usadoRef);
+
             if (usadoSnap.exists()) {
               return Swal.fire(
                 "Cupón ya utilizado",
@@ -79,27 +75,21 @@ export default function Checkout() {
         descuento: descuentoCupon || 0,
         fecha: serverTimestamp(),
         estado: "pendiente",
-        metodoPago: formData.metodoPago,
+        metodoPago: "pendiente",
         direccion: formData.direccion,
         userEmail: formData.email,
         userId: user?.uid || null,
       };
 
-      // 📦 Guardar el pedido
       await addDoc(collection(db, "pedidos"), nuevoPedido);
 
-      // 🧠 Registrar el cupón como usado si aplica
+      // 🧠 Marcar cupón como usado si aplica
       if (cupon && user?.uid) {
         const cuponRef = doc(db, "cupones", cupon);
         const cuponSnap = await getDoc(cuponRef);
-        if (cuponSnap.exists() && cuponSnap.data().soloUnUso) {
-          const usadoRef = doc(
-            db,
-            "usuarios",
-            user.uid,
-            "cupones_usados",
-            cupon
-          );
+
+        if (cuponSnap.exists() && cuponSnap.data().soloUnaVez) {
+          const usadoRef = doc(db, "usuarios", user.uid, "cupones_usados", cupon);
           await setDoc(usadoRef, {
             usado: true,
             fecha: serverTimestamp(),
@@ -163,19 +153,12 @@ export default function Checkout() {
 
           <div>
             <label className="block text-sm">Método de pago</label>
-            <select
-              name="metodoPago"
-              value={formData.metodoPago}
-              onChange={handleChange}
-              className="w-full p-2 bg-gray-800 rounded"
-            >
-              <option value="pendiente">Pendiente</option>
-              <option value="efectivo">Efectivo</option>
-              <option value="cheque">Cheque</option>
-              <option value="echeq">eCheq</option>
-              <option value="transferencia">Transferencia</option>
-              <option value="pagado (MercadoPago)">MercadoPago</option>
-            </select>
+            <input
+              type="text"
+              value="pendiente"
+              disabled
+              className="w-full p-2 bg-gray-700 rounded text-gray-300 cursor-not-allowed"
+            />
           </div>
 
           <div className="mt-6 text-right">
