@@ -14,6 +14,7 @@ export default function UserPanel() {
   const [email, setEmail] = useState(user?.email || "");
   const [cuit, setCuit] = useState("");
   const [direccion, setDireccion] = useState("");
+  const [telefono, setTelefono] = useState(""); // Nuevo campo
   const [nuevaPass, setNuevaPass] = useState("");
   const [passActual, setPassActual] = useState("");
   const [pedidos, setPedidos] = useState([]);
@@ -40,6 +41,7 @@ export default function UserPanel() {
           const datos = snapshot.docs[0].data();
           setCuit(datos.cuit || "");
           setDireccion(datos.direccion || "");
+          setTelefono(datos.telefono || "");
         }
       } catch (error) {
         console.error("Error al cargar datos de usuario:", error);
@@ -60,7 +62,7 @@ export default function UserPanel() {
       const snapshot = await getDocs(q);
       if (!snapshot.empty) {
         const ref = doc(db, "usuarios", snapshot.docs[0].id);
-        await updateDoc(ref, { nombre, cuit, direccion });
+        await updateDoc(ref, { nombre, cuit, direccion, telefono });
         Swal.fire("✅ Cambios guardados correctamente", "", "success");
       }
 
@@ -74,7 +76,6 @@ export default function UserPanel() {
         }
 
         const cred = EmailAuthProvider.credential(user.email, passActual);
-
         try {
           await reauthenticateWithCredential(auth.currentUser, cred);
           await updatePassword(auth.currentUser, nuevaPass);
@@ -131,6 +132,10 @@ export default function UserPanel() {
               <input type="text" value={direccion} onChange={(e) => setDireccion(e.target.value)} className="w-full p-2 bg-gray-700 rounded" />
             </div>
             <div>
+              <label className="block mb-1 text-sm">Teléfono (opcional)</label>
+              <input type="text" value={telefono} onChange={(e) => setTelefono(e.target.value)} className="w-full p-2 bg-gray-700 rounded" />
+            </div>
+            <div>
               <label className="block mb-1 text-sm">Email</label>
               <input type="email" value={email} disabled className="w-full p-2 bg-gray-600 rounded text-gray-400 cursor-not-allowed" />
             </div>
@@ -155,36 +160,33 @@ export default function UserPanel() {
         </form>
 
         <div className="mt-12">
-  <h2 className="text-2xl text-amber-300 font-semibold mb-4">📦 Mis pedidos</h2>
-  <div className="space-y-4">
-  {pedidos.map((pedido) => (
-  <div key={pedido.id} className="bg-gray-800 p-4 rounded shadow">
-    <p className="text-sm text-purple-300 mb-1">🆔 {pedido.id}</p>
-    <p className="text-sm text-gray-300 mb-1">📅 {pedido.fecha?.toDate().toLocaleString()}</p>
-    <p className="text-sm text-gray-300 mb-3">
-      🏷️ Estado: <span className="text-white font-semibold">{pedido.estado}</span>
-    </p>
-
-    {/* Productos ocultos */}
-
-    <div className="flex gap-3">
-      <button
-        onClick={() => cancelarPedido(pedido.id)}
-        className="bg-red-600 hover:bg-red-700 text-white text-sm py-1 px-3 rounded"
-      >
-        Cancelar pedido
-      </button>
-      <Link
-        to={`/pedido/${pedido.id}`}
-        className="bg-blue-600 hover:bg-blue-700 text-white text-sm py-1 px-3 rounded"
-      >
-        Ver pedido
-      </Link>
-    </div>
-  </div>
-))}
-  </div>
-</div>
+          <h2 className="text-2xl text-amber-300 font-semibold mb-4">📦 Mis pedidos</h2>
+          <div className="space-y-4">
+            {pedidos.map((pedido) => (
+              <div key={pedido.id} className="bg-gray-800 p-4 rounded shadow">
+                <p className="text-sm text-purple-300 mb-1">🆔 {pedido.id}</p>
+                <p className="text-sm text-gray-300 mb-1">📅 {pedido.fecha?.toDate().toLocaleString()}</p>
+                <p className="text-sm text-gray-300 mb-3">
+                  🏷️ Estado: <span className="text-white font-semibold">{pedido.estado}</span>
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => cancelarPedido(pedido.id)}
+                    className="bg-red-600 hover:bg-red-700 text-white text-sm py-1 px-3 rounded"
+                  >
+                    Cancelar pedido
+                  </button>
+                  <Link
+                    to={`/pedido/${pedido.id}`}
+                    className="bg-blue-600 hover:bg-blue-700 text-white text-sm py-1 px-3 rounded"
+                  >
+                    Ver pedido
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
       </div>
     </div>
