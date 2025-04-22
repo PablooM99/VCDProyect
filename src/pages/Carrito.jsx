@@ -3,7 +3,7 @@ import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import Swal from "sweetalert2";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { db } from "../firebase/config";
 import { doc, getDoc } from "firebase/firestore";
 import { toast } from "react-toastify";
@@ -24,6 +24,7 @@ export default function Carrito() {
 
   const { user } = useAuth();
   const [cuponInput, setCuponInput] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     localStorage.setItem("carrito", JSON.stringify(cart));
@@ -38,38 +39,37 @@ export default function Carrito() {
 
   const handleAplicarCupon = async () => {
     if (!cuponInput.trim()) return;
-  
+
     try {
       const codigoCupon = cuponInput.toUpperCase();
       const ref = doc(db, "cupones", codigoCupon);
       const snap = await getDoc(ref);
-  
+
       if (!snap.exists()) {
         toast.error("❌ Cupón inválido");
         limpiarCupon();
         return;
       }
-  
+
       const data = snap.data();
-  
+
       if (!data.activo) {
         toast.warning("⚠️ Cupón no está activo");
         limpiarCupon();
         return;
       }
-  
-      // 💡 Verificación de uso único por usuario
+
       if (data.soloUnaVez && user?.uid) {
         const usadoRef = doc(db, "usuarios", user.uid, "cupones_usados", codigoCupon);
         const usadoSnap = await getDoc(usadoRef);
-  
+
         if (usadoSnap.exists()) {
           toast.warning("⚠️ Ya usaste este cupón, es válido solo una vez");
           limpiarCupon();
           return;
         }
       }
-  
+
       aplicarCupon(codigoCupon, data.descuento || 0);
       setCuponInput("");
       toast.success(`🎉 Cupón aplicado: ${data.descuento}% de descuento`);
@@ -78,7 +78,25 @@ export default function Carrito() {
       toast.error("❌ Error al validar el cupón");
     }
   };
-  
+
+  const handleConfirmarPedido = () => {
+    if (!user) {
+      Swal.fire({
+        title: "🚫 Solo usuarios registrados",
+        text: "Debes registrarte o iniciar sesión para confirmar tu pedido.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Registrarme / Iniciar sesión",
+        cancelButtonText: "Cancelar",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate("/login");
+        }
+      });
+    } else {
+      navigate("/checkout");
+    }
+  };
 
   return (
     <div className="p-6 text-white min-h-screen bg-gray-950">
@@ -186,12 +204,12 @@ export default function Carrito() {
               Vaciar carrito
             </button>
             <div className="flex gap-4">
-              <Link
-                to="/checkout"
+              <button
+                onClick={handleConfirmarPedido}
                 className="bg-amber-500 hover:bg-amber-600 text-black px-6 py-2 rounded shadow"
               >
                 Confirmar Pedido
-              </Link>
+              </button>
               <button
                 onClick={() =>
                   Swal.fire(

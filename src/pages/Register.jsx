@@ -1,9 +1,10 @@
 // src/pages/Register.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebase/config";
+import Swal from "sweetalert2";
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -12,18 +13,21 @@ export default function Register() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const handleEmailRegister = async (e) => {
     e.preventDefault();
     setError("");
+
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
-
       await setDoc(doc(db, "usuarios", cred.user.uid), {
         nombre,
         email,
-        rol: "usuario"
+        direccion: "",
+        cuit: "",
+        rol: "usuario",
       });
 
+      Swal.fire("✅ Registro exitoso", "¡Bienvenido!", "success");
       navigate("/");
     } catch (err) {
       console.error(err);
@@ -31,10 +35,37 @@ export default function Register() {
     }
   };
 
+  const handleGoogleRegister = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      const docRef = doc(db, "usuarios", user.uid);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        await setDoc(docRef, {
+          nombre: user.displayName || "Usuario",
+          email: user.email,
+          direccion: "",
+          cuit: "",
+          rol: "usuario",
+        });
+      }
+
+      Swal.fire("✅ Registro con Google exitoso", "¡Bienvenido!", "success");
+      navigate("/");
+    } catch (error) {
+      console.error(error);
+      setError("Error con Google: " + error.message);
+    }
+  };
+
   return (
     <div className="flex justify-center items-center h-screen bg-gray-900 text-white">
       <form
-        onSubmit={handleSubmit}
+        onSubmit={handleEmailRegister}
         className="bg-gray-800 p-6 rounded shadow-md w-full max-w-md"
       >
         <h2 className="text-2xl font-bold text-center text-amber-400 mb-4">Crear cuenta</h2>
@@ -68,9 +99,17 @@ export default function Register() {
 
         <button
           type="submit"
-          className="bg-amber-500 hover:bg-amber-600 text-black font-bold py-2 px-4 rounded w-full"
+          className="bg-amber-500 hover:bg-amber-600 text-black font-bold py-2 px-4 rounded w-full mb-3"
         >
           Registrarse
+        </button>
+
+        <button
+          type="button"
+          onClick={handleGoogleRegister}
+          className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-full"
+        >
+          Registrarse con Google
         </button>
       </form>
     </div>

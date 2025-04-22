@@ -15,6 +15,7 @@ import CuponesAdmin from "./components/CuponesAdmin";
 import PedidosPendientesAdmin from "./components/PedidosPendientesAdmin";
 import PedidoDetalle from "./pages/PedidoDetalle";
 import SoporteAdmin from "./pages/SoporteAdmin";
+import Login from "./pages/Login";
 
 export default function App() {
   return (
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="/PedidosPendientes" element={<PedidosPendientesAdmin />} />
         <Route path="/pedido/:id" element={<PedidoDetalle />} />
         <Route path="/admin/soporte" element={<SoporteAdmin />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/admin" element={
           <AdminRoute>
             <AdminPanel />

@@ -1,7 +1,12 @@
 // src/components/AuthModal.jsx
 import { useState } from "react";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider
+} from "firebase/auth";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "../firebase/config";
 
 export default function AuthModal({ visible, onClose }) {
@@ -41,6 +46,31 @@ export default function AuthModal({ visible, onClose }) {
       }
     } catch (error) {
       console.error("Error:", error.message);
+      alert("❌ " + error.message);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const cred = await signInWithPopup(auth, provider);
+      const user = cred.user;
+
+      // Verificar si el documento de usuario ya existe
+      const ref = doc(db, "usuarios", user.uid);
+      const snap = await getDoc(ref);
+
+      if (!snap.exists()) {
+        await setDoc(ref, {
+          email: user.email || "",
+          nombre: user.displayName || "Sin nombre",
+          rol: "usuario"
+        });
+      }
+
+      cerrar();
+    } catch (error) {
+      console.error("Error con Google:", error.message);
       alert("❌ " + error.message);
     }
   };
@@ -101,6 +131,17 @@ export default function AuthModal({ visible, onClose }) {
             {modo === "login" ? "Iniciar sesión" : "Registrarse"}
           </button>
         </form>
+
+        {/* Google Login */}
+        <div className="mt-4 text-center">
+          <p className="text-sm text-gray-400 mb-2">O continuar con:</p>
+          <button
+            onClick={handleGoogleLogin}
+            className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded w-full"
+          >
+            Iniciar sesión con Google
+          </button>
+        </div>
       </div>
     </div>
   );
