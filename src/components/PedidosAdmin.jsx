@@ -23,6 +23,8 @@ export default function PedidosAdmin() {
   const [busqueda, setBusqueda] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
   const [detalleProductos, setDetalleProductos] = useState([]);
+  const [ordenFechaAsc, setOrdenFechaAsc] = useState(true);
+  const [ordenAZ, setOrdenAZ] = useState(null); // null: sin orden, true: A-Z, false: Z-A
 
   useEffect(() => {
     const fetchPedidos = async () => {
@@ -141,28 +143,33 @@ export default function PedidosAdmin() {
   };
 
   const estadosEnvio = ["pendiente", "preparado", "entregado"];
-  const metodosPago = [
-    "pendiente",
-    "efectivo",
-    "cheque",
-    "echeq",
-    "transferencia",
-    "pagado (MercadoPago)",
-  ];
+  const metodosPago = ["pendiente", "efectivo", "cheque", "echeq", "transferencia", "pagado (MercadoPago)"];
 
-  const pedidosFiltrados = pedidos.filter((p) => {
+  let pedidosFiltrados = pedidos.filter((p) => {
     const coincideEstado = estadoFiltro
       ? p.estado === estadoFiltro || p.metodoPago === estadoFiltro
       : true;
-
     const termino = busqueda.toLowerCase();
     const coincideBusqueda =
       p.id.toLowerCase().includes(termino) ||
       p.usuario?.toLowerCase().includes(termino) ||
       p.fecha?.toDate?.().toLocaleString?.().toLowerCase().includes(termino);
-
     return coincideEstado && coincideBusqueda;
   });
+
+  if (ordenAZ !== null) {
+    pedidosFiltrados.sort((a, b) =>
+      ordenAZ
+        ? a.usuario.localeCompare(b.usuario)
+        : b.usuario.localeCompare(a.usuario)
+    );
+  } else {
+    pedidosFiltrados.sort((a, b) =>
+      ordenFechaAsc
+        ? a.fecha?.toDate?.() - b.fecha?.toDate?.()
+        : b.fecha?.toDate?.() - a.fecha?.toDate?.()
+    );
+  }
 
   const abrirModalProductos = (items, cupon, descuento) => {
     setDetalleProductos({ items, cupon, descuento });
@@ -174,16 +181,10 @@ export default function PedidosAdmin() {
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-amber-400">📦 Gestión de Pedidos</h2>
         <div className="flex gap-2">
-          <button
-            onClick={exportarPDF}
-            className="bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 rounded"
-          >
+          <button onClick={exportarPDF} className="bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 rounded">
             Exportar PDF
           </button>
-          <button
-            onClick={exportarExcel}
-            className="bg-green-500 hover:bg-green-600 text-black px-4 py-2 rounded"
-          >
+          <button onClick={exportarExcel} className="bg-green-500 hover:bg-green-600 text-black px-4 py-2 rounded">
             Exportar Excel
           </button>
         </div>
@@ -197,9 +198,7 @@ export default function PedidosAdmin() {
         >
           <option value="">Todos los estados</option>
           {[...new Set([...estadosEnvio, ...metodosPago])].map((estado) => (
-            <option key={estado} value={estado}>
-              {estado}
-            </option>
+            <option key={estado} value={estado}>{estado}</option>
           ))}
         </select>
 
@@ -210,6 +209,23 @@ export default function PedidosAdmin() {
           onChange={(e) => setBusqueda(e.target.value)}
           className="bg-gray-700 text-white px-3 py-2 rounded w-72"
         />
+
+        <button
+          onClick={() => setOrdenAZ(ordenAZ === null ? true : !ordenAZ)}
+          className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded"
+        >
+          Orden A-Z / Z-A
+        </button>
+
+        <button
+          onClick={() => {
+            setOrdenFechaAsc(!ordenFechaAsc);
+            setOrdenAZ(null);
+          }}
+          className="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded"
+        >
+          Orden por Fecha
+        </button>
 
         <button
           onClick={() => {
@@ -230,67 +246,66 @@ export default function PedidosAdmin() {
               <th>Usuario</th>
               <th>Fecha</th>
               <th>Productos</th>
+              <th>Total</th>
               <th>Estado</th>
               <th>Método de Pago</th>
               <th>Eliminar</th>
             </tr>
           </thead>
           <tbody>
-            {pedidosFiltrados.map((pedido) => (
-              <tr key={pedido.id} className="border-b border-gray-700">
-                <td>{pedido.id}</td>
-                <td>{pedido.usuario || "-"}</td>
-                <td>{pedido.fecha?.toDate?.().toLocaleString?.() || "-"}</td>
-                <td>
-                  <button
-                    onClick={() =>
-                      abrirModalProductos(pedido.items, pedido.cuponAplicado, pedido.descuento)
-                    }
-                    className="text-amber-300 underline hover:text-amber-400"
-                  >
-                    {pedido.items?.length || 0} productos
-                  </button>
-                </td>
-                <td>
-                  <select
-                    value={pedido.estado || ""}
-                    onChange={(e) =>
-                      actualizarCampo(pedido.id, "estado", e.target.value)
-                    }
-                    className="bg-gray-700 text-white px-2 py-1 rounded"
-                  >
-                    {estadosEnvio.map((estado) => (
-                      <option key={estado} value={estado}>
-                        {estado}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td>
-                  <select
-                    value={pedido.metodoPago || ""}
-                    onChange={(e) =>
-                      actualizarCampo(pedido.id, "metodoPago", e.target.value)
-                    }
-                    className="bg-gray-700 text-white px-2 py-1 rounded"
-                  >
-                    {metodosPago.map((metodo) => (
-                      <option key={metodo} value={metodo}>
-                        {metodo}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td>
-                  <button
-                    onClick={() => eliminarPedido(pedido.id)}
-                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
-                  >
-                    Borrar
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {pedidosFiltrados.map((pedido) => {
+              const productos = pedido.items || pedido.productos || [];
+              const totalPedido = productos.reduce((acc, item) => {
+                const cantidad = item.cantidad || item.qty || 1;
+                return acc + (item.price || 0) * cantidad;
+              }, 0);
+              return (
+                <tr key={pedido.id} className="border-b border-gray-700">
+                  <td>{pedido.id}</td>
+                  <td>{pedido.usuario || "-"}</td>
+                  <td>{pedido.fecha?.toDate?.().toLocaleString?.() || "-"}</td>
+                  <td>
+                    <button
+                      onClick={() => abrirModalProductos(productos, pedido.cuponAplicado, pedido.descuento)}
+                      className="text-amber-300 underline hover:text-amber-400"
+                    >
+                      {productos.length} productos
+                    </button>
+                  </td>
+                  <td className="text-green-400 font-semibold">${totalPedido.toFixed(2)}</td>
+                  <td>
+                    <select
+                      value={pedido.estado || ""}
+                      onChange={(e) => actualizarCampo(pedido.id, "estado", e.target.value)}
+                      className="bg-gray-700 text-white px-2 py-1 rounded"
+                    >
+                      {estadosEnvio.map((estado) => (
+                        <option key={estado} value={estado}>{estado}</option>
+                      ))}
+                    </select>
+                  </td>
+                  <td>
+                    <select
+                      value={pedido.metodoPago || ""}
+                      onChange={(e) => actualizarCampo(pedido.id, "metodoPago", e.target.value)}
+                      className="bg-gray-700 text-white px-2 py-1 rounded"
+                    >
+                      {metodosPago.map((metodo) => (
+                        <option key={metodo} value={metodo}>{metodo}</option>
+                      ))}
+                    </select>
+                  </td>
+                  <td>
+                    <button
+                      onClick={() => eliminarPedido(pedido.id)}
+                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+                    >
+                      Borrar
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -301,15 +316,12 @@ export default function PedidosAdmin() {
             <h3 className="text-lg text-amber-400 font-semibold mb-4">🧾 Detalle del Pedido</h3>
             <ul className="list-disc list-inside text-sm mb-4 text-white">
               {detalleProductos.items?.map((item, idx) => (
-                <li key={idx}>
-                  {item.title} x{item.qty || item.cantidad}
-                </li>
+                <li key={idx}>{item.title} x{item.qty || item.cantidad}</li>
               ))}
             </ul>
             {detalleProductos.cupon && (
               <p className="text-green-400 text-sm">
-                Cupón aplicado: <strong>{detalleProductos.cupon}</strong> –{" "}
-                {detalleProductos.descuento}% OFF
+                Cupón aplicado: <strong>{detalleProductos.cupon}</strong> – {detalleProductos.descuento}% OFF
               </p>
             )}
             <button

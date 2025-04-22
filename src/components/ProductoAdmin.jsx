@@ -24,17 +24,13 @@ export default function ProductoAdmin() {
     id: "",
     title: "",
     price: 0,
+    costo: 0,
     categoria: "",
+    subcategoria: "",
+    marca: "",
     stock: 0,
     imageFiles: [],
     imageUrls: [],
-  });
-  const [metricas, setMetricas] = useState({
-    totalProductos: 0,
-    totalStock: 0,
-    promedioPrecio: 0,
-    productosSinStock: 0,
-    categoriaTop: "",
   });
 
   useEffect(() => {
@@ -46,34 +42,9 @@ export default function ProductoAdmin() {
       const snap = await getDocs(collection(db, "productos"));
       const datos = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       setProductos(datos);
-      calcularMetricas(datos);
     } catch (error) {
       console.error("Error al cargar productos:", error);
     }
-  };
-
-  const calcularMetricas = (productos) => {
-    const totalProductos = productos.length;
-    const totalStock = productos.reduce((acc, p) => acc + (p.stock || 0), 0);
-    const promedioPrecio =
-      totalProductos > 0
-        ? productos.reduce((acc, p) => acc + (p.price || 0), 0) / totalProductos
-        : 0;
-    const productosSinStock = productos.filter((p) => !p.stock || p.stock === 0).length;
-    const categoriaCount = productos.reduce((acc, p) => {
-      if (!p.categoria) return acc;
-      acc[p.categoria] = (acc[p.categoria] || 0) + 1;
-      return acc;
-    }, {});
-    const categoriaTop = Object.entries(categoriaCount).sort((a, b) => b[1] - a[1])[0]?.[0] || "-";
-
-    setMetricas({
-      totalProductos,
-      totalStock,
-      promedioPrecio,
-      productosSinStock,
-      categoriaTop,
-    });
   };
 
   const handleNuevoChange = (e) => {
@@ -88,7 +59,7 @@ export default function ProductoAdmin() {
     } else {
       setNuevoProducto((prev) => ({
         ...prev,
-        [name]: name === "price" || name === "stock" ? Number(value) : value,
+        [name]: ["price", "stock", "costo"].includes(name) ? Number(value) : value,
       }));
     }
   };
@@ -98,7 +69,10 @@ export default function ProductoAdmin() {
       id,
       title,
       price,
+      costo,
       categoria,
+      subcategoria,
+      marca,
       stock,
       imageFiles,
       imageUrls,
@@ -118,20 +92,32 @@ export default function ProductoAdmin() {
         imageArray.push(url);
       }
 
-      const nuevo = { id, title, price, categoria, stock, imageURLs: imageArray };
+      const nuevo = {
+        id,
+        title,
+        price,
+        costo,
+        categoria,
+        subcategoria,
+        marca,
+        stock,
+        imageURLs: imageArray,
+      };
+
       await setDoc(doc(db, "productos", id), nuevo);
 
       const nuevos = [...productos, nuevo];
       setProductos(nuevos);
-      calcularMetricas(nuevos);
-
       Swal.fire("✅ Producto agregado con éxito", "", "success");
 
       setNuevoProducto({
         id: "",
         title: "",
         price: 0,
+        costo: 0,
         categoria: "",
+        subcategoria: "",
+        marca: "",
         stock: 0,
         imageFiles: [],
         imageUrls: [],
@@ -181,12 +167,11 @@ export default function ProductoAdmin() {
       p.id === id
         ? {
             ...p,
-            [campo]: campo === "price" || campo === "stock" ? Number(e.target.value) : e.target.value,
+            [campo]: ["price", "stock", "costo"].includes(campo) ? Number(e.target.value) : e.target.value,
           }
         : p
     );
     setProductos(actualizado);
-    calcularMetricas(actualizado);
   };
 
   const handleSync = async () => {
@@ -205,8 +190,11 @@ export default function ProductoAdmin() {
     const data = productos.map(p => ({
       ID: p.id,
       Título: p.title,
+      Marca: p.marca || "",
+      Subcategoría: p.subcategoria || "",
       Categoría: p.categoria,
-      Precio: p.price,
+      "Precio compra": p.costo || 0,
+      "Precio venta": p.price,
       Stock: p.stock,
     }));
 
@@ -230,20 +218,15 @@ export default function ProductoAdmin() {
     <div className="p-4 bg-gray-800 text-white rounded">
       <h2 className="text-2xl font-bold text-amber-400 mb-4">🎛️ Administrar Productos</h2>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6 text-center">
-        <div className="bg-gray-900 p-4 rounded"><h4>Total</h4><p className="text-xl font-bold">{metricas.totalProductos}</p></div>
-        <div className="bg-gray-900 p-4 rounded"><h4>Stock</h4><p className="text-xl font-bold">{metricas.totalStock}</p></div>
-        <div className="bg-gray-900 p-4 rounded"><h4>Promedio</h4><p className="text-xl font-bold">${metricas.promedioPrecio.toFixed(2)}</p></div>
-        <div className="bg-gray-900 p-4 rounded"><h4>Sin Stock</h4><p className="text-xl font-bold">{metricas.productosSinStock}</p></div>
-        <div className="bg-gray-900 p-4 rounded"><h4>Top Categoría</h4><p className="text-xl font-bold">{metricas.categoriaTop}</p></div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end mb-8 bg-gray-900 p-4 rounded">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end mb-6 bg-gray-900 p-4 rounded">
         <input type="text" name="id" value={nuevoProducto.id} onChange={handleNuevoChange} placeholder="ID" className="bg-gray-700 text-white p-2 rounded w-full" />
         <input type="text" name="title" value={nuevoProducto.title} onChange={handleNuevoChange} placeholder="Título" className="bg-gray-700 text-white p-2 rounded w-full" />
-        <input type="number" name="price" value={nuevoProducto.price} onChange={handleNuevoChange} placeholder="Precio" className="bg-gray-700 text-white p-2 rounded w-full" />
-        <input type="number" name="stock" value={nuevoProducto.stock} onChange={handleNuevoChange} placeholder="Stock" className="bg-gray-700 text-white p-2 rounded w-full" />
+        <input type="number" name="costo" value={nuevoProducto.costo} onChange={handleNuevoChange} placeholder="Precio de compra" className="bg-gray-700 text-white p-2 rounded w-full" />
+        <input type="number" name="price" value={nuevoProducto.price} onChange={handleNuevoChange} placeholder="Precio de venta" className="bg-gray-700 text-white p-2 rounded w-full" />
+        <input type="number" name="stock" value={nuevoProducto.stock} onChange={handleNuevoChange} placeholder="Stock disponible" className="bg-gray-700 text-white p-2 rounded w-full" />
         <input type="text" name="categoria" value={nuevoProducto.categoria} onChange={handleNuevoChange} placeholder="Categoría" className="bg-gray-700 text-white p-2 rounded w-full" />
+        <input type="text" name="subcategoria" value={nuevoProducto.subcategoria} onChange={handleNuevoChange} placeholder="Subcategoría" className="bg-gray-700 text-white p-2 rounded w-full" />
+        <input type="text" name="marca" value={nuevoProducto.marca} onChange={handleNuevoChange} placeholder="Marca" className="bg-gray-700 text-white p-2 rounded w-full" />
         <input type="text" name="imageUrls" placeholder="URLs (separadas por coma)" onChange={handleNuevoChange} className="bg-gray-700 text-white p-2 rounded w-full" />
         <input type="file" name="imageFiles" multiple accept="image/*" onChange={handleNuevoChange} className="text-sm" />
         <button onClick={agregarProducto} className="bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 rounded font-bold mt-2 md:mt-0">➕ Agregar Producto</button>
@@ -267,44 +250,38 @@ export default function ProductoAdmin() {
             <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
-        <button
-          onClick={() => {
-            setBusqueda("");
-            setCategoriaFiltro("");
-          }}
-          className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded text-white"
-        >
-          Limpiar filtros
-        </button>
-        <button
-          onClick={handleSync}
-          className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded"
-        >
-          💾 Subir Cambios
-        </button>
-        <button
-          onClick={exportarExcel}
-          className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded"
-        >
-          📥 Exportar Excel
-        </button>
+        <button onClick={() => { setBusqueda(""); setCategoriaFiltro(""); }} className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded text-white">Limpiar filtros</button>
+        <button onClick={handleSync} className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">💾 Subir Cambios</button>
+        <button onClick={exportarExcel} className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded">📥 Exportar Excel</button>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead>
-            <tr className="text-amber-300">
-              <th>ID</th><th>Título</th><th>Precio</th><th>Stock</th><th>Categoría</th><th>Imagen Principal</th><th>Agregar Imagen (URL)</th>
+          <thead className="text-amber-300">
+            <tr>
+              <th>ID</th>
+              <th>Título</th>
+              <th>Marca</th>
+              <th>Subcategoría</th>
+              <th>Categoría</th>
+              <th>Precio compra</th>
+              <th>Precio venta</th>
+              <th>Stock</th>
+              <th>Imagen Principal</th>
+              <th>Agregar Imagen</th>
             </tr>
           </thead>
           <tbody>
             {productosFiltrados.map((p) => (
               <tr key={p.id} className="border-b border-gray-700">
-                <td>{p.id}</td>
+                <td><input value={p.id} onChange={(e) => handleEditChange(e, p.id, "id")} className="bg-gray-800 text-white px-2 w-full rounded" /></td>
                 <td><input value={p.title} onChange={(e) => handleEditChange(e, p.id, "title")} className="bg-gray-800 text-white px-2 w-full rounded" /></td>
-                <td><input type="number" value={p.price} onChange={(e) => handleEditChange(e, p.id, "price")} className="bg-gray-800 text-white px-2 w-full rounded" /></td>
-                <td><input type="number" value={p.stock} onChange={(e) => handleEditChange(e, p.id, "stock")} className="bg-gray-800 text-white px-2 w-full rounded" /></td>
-                <td><input value={p.categoria} onChange={(e) => handleEditChange(e, p.id, "categoria")} className="bg-gray-800 text-white px-2 w-full rounded" /></td>
+                <td><input value={p.marca || ""} onChange={(e) => handleEditChange(e, p.id, "marca")} className="bg-gray-800 text-white px-2 w-full rounded" /></td>
+                <td><input value={p.subcategoria || ""} onChange={(e) => handleEditChange(e, p.id, "subcategoria")} className="bg-gray-800 text-white px-2 w-full rounded" /></td>
+                <td><input value={p.categoria || ""} onChange={(e) => handleEditChange(e, p.id, "categoria")} className="bg-gray-800 text-white px-2 w-full rounded" /></td>
+                <td><input type="number" value={p.costo || 0} onChange={(e) => handleEditChange(e, p.id, "costo")} className="bg-gray-800 text-white px-2 w-full rounded" /></td>
+                <td><input type="number" value={p.price || 0} onChange={(e) => handleEditChange(e, p.id, "price")} className="bg-gray-800 text-white px-2 w-full rounded" /></td>
+                <td><input type="number" value={p.stock || 0} onChange={(e) => handleEditChange(e, p.id, "stock")} className="bg-gray-800 text-white px-2 w-full rounded" /></td>
                 <td>
                   <img
                     src={p.imageURLs?.[0] || "https://via.placeholder.com/150"}
