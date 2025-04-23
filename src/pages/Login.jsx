@@ -10,11 +10,13 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { doc, setDoc, getFirestore } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const auth = getAuth();
   const db = getFirestore();
   const provider = new GoogleAuthProvider();
+  const navigate = useNavigate();
 
   const [modoRegistro, setModoRegistro] = useState(false);
   const [nombre, setNombre] = useState("");
@@ -49,6 +51,7 @@ export default function Login() {
       } else {
         await signInWithEmailAndPassword(auth, email, password);
         Swal.fire("✅ Bienvenido", "Inicio de sesión exitoso", "success");
+        navigate("/");
       }
     } catch (error) {
       Swal.fire("❌ Error", error.message, "error");
@@ -72,14 +75,16 @@ export default function Login() {
           rol: "usuario",
         });
       }
-
+      
       Swal.fire("✅ Bienvenido", "Sesión iniciada con Google", "success");
+      navigate("/");
     } catch (error) {
       Swal.fire("❌ Error con Google", error.message, "error");
     }
   };
 
   return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-800">
     <div className="p-4 sm:p-6 md:p-8 text-white max-w-lg mx-auto w-full bg-gray-900 rounded-xl">
       <div className="flex justify-between mb-4">
         <button
@@ -139,5 +144,6 @@ export default function Login() {
         {modoRegistro ? "Registrarse con Google" : "Iniciar sesión con Google"}
       </button>
     </div>
+  </div>
   );
 }

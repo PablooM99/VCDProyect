@@ -3,8 +3,10 @@ import { useEffect, useState } from "react";
 import { db } from "../firebase/config";
 import { collection, getDocs, updateDoc, deleteDoc, doc } from "firebase/firestore";
 import Swal from "sweetalert2";
+import { useAuth } from "../context/AuthContext";
 
 export default function UsuariosAdmin() {
+  const { user } = useAuth();
   const [usuarios, setUsuarios] = useState([]);
   const [filtro, setFiltro] = useState("");
 
@@ -22,6 +24,9 @@ export default function UsuariosAdmin() {
   }, []);
 
   const actualizarUsuario = async (id, campo, valor) => {
+    if (user?.rol === "empleado") {
+      return Swal.fire("❌ No tienes permisos para editar usuarios", "", "error");
+    }
     try {
       const ref = doc(db, "usuarios", id);
       await updateDoc(ref, { [campo]: valor });
@@ -32,6 +37,10 @@ export default function UsuariosAdmin() {
   };
 
   const eliminarUsuario = async (id) => {
+    if (user?.rol === "empleado") {
+      return Swal.fire("❌ No tienes permisos para eliminar usuarios", "", "error");
+    }
+
     const confirm = await Swal.fire({
       title: "¿Estás seguro?",
       text: "El usuario será eliminado permanentemente.",
@@ -81,23 +90,50 @@ export default function UsuariosAdmin() {
             {usuariosFiltrados.map(u => (
               <tr key={u.id} className="border-b border-gray-700">
                 <td>
-                  <input value={u.nombre} onChange={(e) => actualizarUsuario(u.id, "nombre", e.target.value)} className="bg-gray-700 p-1 rounded w-full" />
+                  <input
+                    value={u.nombre}
+                    onChange={(e) => actualizarUsuario(u.id, "nombre", e.target.value)}
+                    className="bg-gray-700 p-1 rounded w-full"
+                    disabled={user?.rol === "empleado"}
+                  />
                 </td>
                 <td className="text-sm text-gray-300">{u.email}</td>
                 <td>
-                  <input value={u.cuit || ""} onChange={(e) => actualizarUsuario(u.id, "cuit", e.target.value)} className="bg-gray-700 p-1 rounded w-full" />
+                  <input
+                    value={u.cuit || ""}
+                    onChange={(e) => actualizarUsuario(u.id, "cuit", e.target.value)}
+                    className="bg-gray-700 p-1 rounded w-full"
+                    disabled={user?.rol === "empleado"}
+                  />
                 </td>
                 <td>
-                  <input value={u.direccion || ""} onChange={(e) => actualizarUsuario(u.id, "direccion", e.target.value)} className="bg-gray-700 p-1 rounded w-full" />
+                  <input
+                    value={u.direccion || ""}
+                    onChange={(e) => actualizarUsuario(u.id, "direccion", e.target.value)}
+                    className="bg-gray-700 p-1 rounded w-full"
+                    disabled={user?.rol === "empleado"}
+                  />
                 </td>
                 <td>
-                  <select value={u.rol || "usuario"} onChange={(e) => actualizarUsuario(u.id, "rol", e.target.value)} className="bg-gray-700 p-1 rounded w-full">
+                  <select
+                    value={u.rol || "usuario"}
+                    onChange={(e) => actualizarUsuario(u.id, "rol", e.target.value)}
+                    className="bg-gray-700 p-1 rounded w-full"
+                    disabled={user?.rol === "empleado"}
+                  >
                     <option value="usuario">usuario</option>
+                    <option value="empleado">empleado</option>
                     <option value="admin">admin</option>
                   </select>
                 </td>
                 <td>
-                  <button onClick={() => eliminarUsuario(u.id)} className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">Eliminar</button>
+                  <button
+                    onClick={() => eliminarUsuario(u.id)}
+                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+                    disabled={user?.rol === "empleado"}
+                  >
+                    Eliminar
+                  </button>
                 </td>
               </tr>
             ))}

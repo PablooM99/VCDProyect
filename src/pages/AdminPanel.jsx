@@ -13,34 +13,33 @@ import SoporteAdmin from "../pages/SoporteAdmin";
 import CuponesAdmin from "../components/CuponesAdmin";
 import PedidosPendientesAdmin from "../components/PedidosPendientesAdmin";
 
-
 export default function AdminPanel() {
   const { user } = useAuth();
   const [tab, setTab] = useState("dashboard");
-  const [isAdmin, setIsAdmin] = useState(null);
+  const [rolAcceso, setRolAcceso] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const verificarRolAdmin = async () => {
+    const verificarAcceso = async () => {
       if (!user) return navigate("/login");
       try {
         const userDoc = await getDoc(doc(db, "usuarios", user.uid));
         const data = userDoc.data();
-        if (data?.rol === "admin") {
-          setIsAdmin(true);
+        if (data?.rol === "admin" || data?.rol === "empleado") {
+          setRolAcceso(data.rol); // admin o empleado
         } else {
-          setIsAdmin(false);
+          setRolAcceso(null);
           navigate("/");
         }
       } catch (error) {
-        console.error("Error al verificar rol de admin:", error);
+        console.error("Error al verificar acceso:", error);
         navigate("/");
       }
     };
-    verificarRolAdmin();
+    verificarAcceso();
   }, [user, navigate]);
 
-  if (isAdmin === null) return <p className="text-white">Verificando acceso...</p>;
+  if (rolAcceso === null) return <p className="text-white">Verificando acceso...</p>;
 
   return (
     <div className="p-4 md:p-8 text-white bg-gray-950 min-h-screen">
@@ -65,20 +64,24 @@ export default function AdminPanel() {
         >
           Pedidos
         </button>
-        <button
-          onClick={() => setTab("usuarios")}
-          className={`px-4 py-2 rounded font-semibold ${tab === "usuarios" ? "bg-amber-500 text-black" : "bg-gray-700 text-white"}`}
-        >
-          Usuarios
-        </button>
-        <button
-          onClick={() => setTab("cupones")}
-          className={`px-4 py-2 rounded font-semibold ${
-            tab === "cupones" ? "bg-amber-500 text-black" : "bg-gray-700 text-white"
-          }`}
-        >
-          Cupones
-        </button>
+        {rolAcceso === "admin" && (
+          <button
+            onClick={() => setTab("usuarios")}
+            className={`px-4 py-2 rounded font-semibold ${tab === "usuarios" ? "bg-amber-500 text-black" : "bg-gray-700 text-white"}`}
+          >
+            Usuarios
+          </button>
+        )}
+        {rolAcceso === "admin" && (
+          <button
+            onClick={() => setTab("cupones")}
+            className={`px-4 py-2 rounded font-semibold ${
+              tab === "cupones" ? "bg-amber-500 text-black" : "bg-gray-700 text-white"
+            }`}
+          >
+            Cupones
+          </button>
+        )}
         <button
           onClick={() => setTab("categorias")}
           className={`px-4 py-2 rounded font-semibold ${tab === "categorias" ? "bg-amber-500 text-black" : "bg-gray-700 text-white"}`}
@@ -103,12 +106,11 @@ export default function AdminPanel() {
         {tab === "dashboard" && <DashboardAdmin />}
         {tab === "productos" && <ProductoAdmin />}
         {tab === "pedidos" && <PedidosAdmin />}
-        {tab === "usuarios" && <UsuariosAdmin />}
+        {tab === "usuarios" && rolAcceso === "admin" && <UsuariosAdmin />}
         {tab === "categorias" && <ProductosPorCategoria />}
         {tab === "soporte" && <SoporteAdmin />}
-        {tab === "cupones" && <CuponesAdmin />}
+        {tab === "cupones" && rolAcceso === "admin" && <CuponesAdmin />}
         {tab === "pendientes" && <PedidosPendientesAdmin />}
-
       </div>
     </div>
   );

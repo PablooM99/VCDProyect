@@ -6,6 +6,7 @@ import {
   getDocs,
   setDoc,
   doc,
+  deleteDoc,
 } from "firebase/firestore";
 import {
   ref,
@@ -124,6 +125,27 @@ export default function ProductoAdmin() {
       });
     } catch (error) {
       console.error("Error al guardar producto:", error);
+    }
+  };
+
+  const eliminarProducto = async (id) => {
+    const confirm = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "Esto eliminará el producto permanentemente.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar"
+    });
+
+    if (confirm.isConfirmed) {
+      try {
+        await deleteDoc(doc(db, "productos", id));
+        setProductos((prev) => prev.filter((p) => p.id !== id));
+        Swal.fire("✅ Producto eliminado correctamente", "", "success");
+      } catch (error) {
+        console.error("Error al eliminar producto:", error);
+      }
     }
   };
 
@@ -269,6 +291,7 @@ export default function ProductoAdmin() {
               <th>Stock</th>
               <th>Imagen Principal</th>
               <th>Agregar Imagen</th>
+              <th>Eliminar</th>
             </tr>
           </thead>
           <tbody>
@@ -307,6 +330,14 @@ export default function ProductoAdmin() {
                     className="bg-blue-600 hover:bg-blue-700 px-2 py-1 text-sm rounded mt-1 block"
                   >
                     ➕ Agregar
+                  </button>
+                </td>
+                <td>
+                  <button
+                    onClick={() => eliminarProducto(p.id)}
+                    className="bg-red-600 hover:bg-red-700 px-3 py-1 text-sm rounded"
+                  >
+                    🗑️ Borrar
                   </button>
                 </td>
               </tr>

@@ -1,5 +1,4 @@
-// src/App.jsx
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import Home from "./pages/Home";
 import Productos from "./pages/Productos";
 import Carrito from "./pages/Carrito";
@@ -16,8 +15,12 @@ import PedidosPendientesAdmin from "./components/PedidosPendientesAdmin";
 import PedidoDetalle from "./pages/PedidoDetalle";
 import SoporteAdmin from "./pages/SoporteAdmin";
 import Login from "./pages/Login";
+import Footer from "./components/Footer";
 
 export default function App() {
+  const location = useLocation();
+  const esAdmin = location.pathname.startsWith("/admin");
+
   return (
     <>
       <NavBar />
@@ -35,12 +38,16 @@ export default function App() {
         <Route path="/pedido/:id" element={<PedidoDetalle />} />
         <Route path="/admin/soporte" element={<SoporteAdmin />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/admin" element={
-          <AdminRoute>
-            <AdminPanel />
-          </AdminRoute>
-        } />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminPanel />
+            </AdminRoute>
+          }
+        />
       </Routes>
+      {!esAdmin && <Footer />}
     </>
   );
 }
