@@ -10,12 +10,14 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase/config";
 import Swal from "sweetalert2";
+import { useAuth } from "../context/AuthContext";
 
 export default function CuponesAdmin() {
+  const { user } = useAuth();
   const [cupones, setCupones] = useState([]);
   const [codigo, setCodigo] = useState("");
   const [descuento, setDescuento] = useState("");
-  const [soloUnaVez, setSoloUnaVez] = useState(false); // ✅ NUEVO
+  const [soloUnaVez, setSoloUnaVez] = useState(false);
 
   const cargarCupones = async () => {
     const snap = await getDocs(collection(db, "cupones"));
@@ -28,6 +30,10 @@ export default function CuponesAdmin() {
   }, []);
 
   const crearCupon = async () => {
+    if (user?.rol === "empleado") {
+      return Swal.fire("❌ No tienes permisos para crear cupones", "", "error");
+    }
+
     if (!codigo || !descuento) return;
 
     const cuponID = codigo.trim().toUpperCase();
@@ -35,22 +41,30 @@ export default function CuponesAdmin() {
     await setDoc(doc(db, "cupones", cuponID), {
       descuento: Number(descuento),
       activo: true,
-      soloUnaVez: soloUnaVez, // ✅ Guardar en Firestore
+      soloUnaVez: soloUnaVez,
     });
 
     setCodigo("");
     setDescuento("");
-    setSoloUnaVez(false); // ✅ Reiniciar casilla
+    setSoloUnaVez(false);
     cargarCupones();
     Swal.fire("✅ Cupón creado correctamente", "", "success");
   };
 
   const toggleActivo = async (id, estado) => {
+    if (user?.rol === "empleado") {
+      return Swal.fire("❌ No puedes activar o desactivar cupones", "", "error");
+    }
+
     await updateDoc(doc(db, "cupones", id), { activo: !estado });
     cargarCupones();
   };
 
   const eliminarCupon = async (id) => {
+    if (user?.rol === "empleado") {
+      return Swal.fire("❌ No puedes eliminar cupones", "", "error");
+    }
+
     const confirm = await Swal.fire({
       title: "¿Eliminar cupón?",
       text: "Esta acción no se puede deshacer y se eliminará de los usuarios que lo hayan usado.",
@@ -59,29 +73,26 @@ export default function CuponesAdmin() {
       confirmButtonText: "Sí, eliminar",
     });
     if (!confirm.isConfirmed) return;
-  
+
     try {
-      // Eliminar cupón del sistema
       await deleteDoc(doc(db, "cupones", id));
-  
-      // Buscar todos los usuarios
+
       const usuariosSnap = await getDocs(collection(db, "usuarios"));
       for (const usuario of usuariosSnap.docs) {
         const usadoRef = doc(db, "usuarios", usuario.id, "cupones_usados", id);
         const usadoSnap = await getDoc(usadoRef);
         if (usadoSnap.exists()) {
-          await deleteDoc(usadoRef); // eliminar si existe
+          await deleteDoc(usadoRef);
         }
       }
-  
-      await cargarCupones(); // refrescar lista
+
+      await cargarCupones();
       Swal.fire("✅ Cupón eliminado", "Y también eliminado de los usuarios", "success");
     } catch (err) {
       console.error("Error al eliminar cupón y sus rastros:", err);
       Swal.fire("Error", "No se pudo eliminar completamente el cupón", "error");
     }
   };
-  
 
   return (
     <div className="text-white p-4 bg-gray-950 min-h-screen">
@@ -94,6 +105,7 @@ export default function CuponesAdmin() {
           value={codigo}
           onChange={(e) => setCodigo(e.target.value)}
           className="bg-gray-800 p-2 rounded text-white"
+          disabled={user?.rol === "empleado"}
         />
         <input
           type="number"
@@ -101,18 +113,25 @@ export default function CuponesAdmin() {
           value={descuento}
           onChange={(e) => setDescuento(e.target.value)}
           className="bg-gray-800 p-2 rounded text-white"
+          disabled={user?.rol === "empleado"}
         />
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"
             checked={soloUnaVez}
             onChange={(e) => setSoloUnaVez(e.target.checked)}
+            disabled={user?.rol === "empleado"}
           />
           Solo un uso por usuario
         </label>
         <button
           onClick={crearCupon}
-          className="bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 rounded"
+          className={`px-4 py-2 rounded ${
+            user?.rol === "empleado"
+              ? "bg-gray-600 cursor-not-allowed"
+              : "bg-amber-500 hover:bg-amber-600 text-black"
+          }`}
+          disabled={user?.rol === "empleado"}
         >
           Crear cupón
         </button>
@@ -148,34 +167,26 @@ export default function CuponesAdmin() {
                     <span className="text-gray-400 text-xs">♻️ Reutilizable</span>
                   )}
                 </td>
-                <td className="p-2 flex gap-2 justify-center">
-                  <button
-                    onClick={() => toggleActivo(c.id, c.activo)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-2 py-1 rounded"
-                  >
-                    {c.activo ? "Desactivar" : "Activar"}
-                  </button>
-                  <button
-                    onClick={() => eliminarCupon(c.id)}
-                    className="bg-red-600 hover:bg-red-700 text-white text-sm px-2 py-1 rounded"
-                  >
-                    Eliminar
-                  </button>
+                <td className="p-2 text-center">
+                  {user?.rol === "admin" ? (
+                    <div className="flex gap-2 justify-center">
+                      <button
+                        onClick={() => toggleActivo(c.id, c.activo)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-2 py-1 rounded"
+                      >
+                        {c.activo ? "Desactivar" : "Activar"}
+                      </button>
+                      <button
+                        onClick={() => eliminarCupon(c.id)}
+                        className="bg-red-600 hover:bg-red-700 text-white text-sm px-2 py-1 rounded"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-gray-400 italic text-xs">Solo lectura</span>
+                  )}
                 </td>
-                {c.soloUnaVez && c.usadoPor?.length > 0 && (
-                  <tr className="border-b border-gray-700">
-                    <td colSpan="4" className="p-2 text-sm text-gray-300">
-                      <strong className="text-amber-400">Usado por:</strong>
-                      <ul className="list-disc list-inside mt-1">
-                        {c.usadoPor.map((u, idx) => (
-                          <li key={idx}>
-                            {u.nombre} ({u.id})
-                          </li>
-                        ))}
-                      </ul>
-                    </td>
-                  </tr>
-                )}
               </tr>
             ))}
           </tbody>

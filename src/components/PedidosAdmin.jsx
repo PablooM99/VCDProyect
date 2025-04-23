@@ -16,15 +16,17 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { enviarNotificacion } from "../utils/notificacionesService";
+import { useAuth } from "../context/AuthContext";
 
 export default function PedidosAdmin() {
+  const { user } = useAuth();
   const [pedidos, setPedidos] = useState([]);
   const [estadoFiltro, setEstadoFiltro] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
   const [detalleProductos, setDetalleProductos] = useState([]);
   const [ordenFechaAsc, setOrdenFechaAsc] = useState(true);
-  const [ordenAZ, setOrdenAZ] = useState(null); // null: sin orden, true: A-Z, false: Z-A
+  const [ordenAZ, setOrdenAZ] = useState(null);
 
   useEffect(() => {
     const fetchPedidos = async () => {
@@ -95,6 +97,11 @@ export default function PedidosAdmin() {
   };
 
   const eliminarPedido = async (id) => {
+    if (user?.rol === "empleado") {
+      alert("❌ No tienes permisos para eliminar pedidos.");
+      return;
+    }
+
     try {
       await deleteDoc(doc(db, "pedidos", id));
       setPedidos((prev) => prev.filter((p) => p.id !== id));
@@ -298,7 +305,12 @@ export default function PedidosAdmin() {
                   <td>
                     <button
                       onClick={() => eliminarPedido(pedido.id)}
-                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+                      className={`${
+                        user?.rol === "empleado"
+                          ? "bg-gray-600 cursor-not-allowed"
+                          : "bg-red-500 hover:bg-red-600"
+                      } text-white px-3 py-1 rounded`}
+                      disabled={user?.rol === "empleado"}
                     >
                       Borrar
                     </button>

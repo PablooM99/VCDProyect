@@ -64,7 +64,7 @@ export default function AdminPanel() {
         >
           Pedidos
         </button>
-        {rolAcceso === "admin" && (
+        {["admin", "empleado"].includes(rolAcceso) && (
           <button
             onClick={() => setTab("usuarios")}
             className={`px-4 py-2 rounded font-semibold ${tab === "usuarios" ? "bg-amber-500 text-black" : "bg-gray-700 text-white"}`}
@@ -72,7 +72,8 @@ export default function AdminPanel() {
             Usuarios
           </button>
         )}
-        {rolAcceso === "admin" && (
+
+        {["admin", "empleado"].includes(rolAcceso) && (
           <button
             onClick={() => setTab("cupones")}
             className={`px-4 py-2 rounded font-semibold ${
@@ -106,10 +107,10 @@ export default function AdminPanel() {
         {tab === "dashboard" && <DashboardAdmin />}
         {tab === "productos" && <ProductoAdmin />}
         {tab === "pedidos" && <PedidosAdmin />}
-        {tab === "usuarios" && rolAcceso === "admin" && <UsuariosAdmin />}
+        {tab === "usuarios" && ["admin", "empleado"].includes(rolAcceso) && <UsuariosAdmin />}
         {tab === "categorias" && <ProductosPorCategoria />}
         {tab === "soporte" && <SoporteAdmin />}
-        {tab === "cupones" && rolAcceso === "admin" && <CuponesAdmin />}
+        {tab === "cupones" && ["admin", "empleado"].includes(rolAcceso) && <CuponesAdmin />}
         {tab === "pendientes" && <PedidosPendientesAdmin />}
       </div>
     </div>

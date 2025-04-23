@@ -45,15 +45,10 @@ export default function NavBar() {
         VCDProyect
       </Link>
 
-      {/* Botón hamburguesa */}
-      <button
-        className="sm:hidden text-white"
-        onClick={() => setMenuAbierto(!menuAbierto)}
-      >
+      <button className="sm:hidden text-white" onClick={() => setMenuAbierto(!menuAbierto)}>
         <FaBars size={24} />
       </button>
 
-      {/* Links desktop */}
       <div className="hidden sm:flex gap-4 items-center">
         <Link to="/productos" onClick={handleLinkClick} className="hover:text-amber-400">
           Productos
@@ -76,15 +71,19 @@ export default function NavBar() {
           </div>
         )}
 
-        {user?.rol === "admin" && (
+        {["admin", "empleado"].includes(user?.rol) && (
           <Link to="/admin" className="bg-amber-600 hover:bg-amber-700 text-black px-3 py-1 rounded">
-            Admin
+            Panel
           </Link>
         )}
 
         {user ? (
           <>
-            <Link to="/panel" onClick={handleLinkClick} className="bg-amber-500 hover:bg-amber-600 text-black px-3 py-1 rounded">
+            <Link
+              to="/panel"
+              onClick={handleLinkClick}
+              className="bg-amber-500 hover:bg-amber-600 text-black px-3 py-1 rounded"
+            >
               Perfil
             </Link>
             <button
@@ -103,7 +102,6 @@ export default function NavBar() {
           </button>
         )}
 
-        {/* Carrito */}
         <div className="relative" ref={carritoRef}>
           <button
             onClick={() => setTimeout(() => setMostrarMiniCarrito((prev) => !prev), 0)}
@@ -120,7 +118,6 @@ export default function NavBar() {
         </div>
       </div>
 
-      {/* Menú hamburguesa móvil */}
       {menuAbierto && (
         <div className="absolute top-full right-0 bg-gray-800 w-64 py-4 px-6 shadow-lg rounded-bl-md space-y-3 flex flex-col items-end sm:hidden z-50">
           <Link to="/productos" onClick={handleLinkClick} className="hover:text-amber-400">
@@ -144,9 +141,9 @@ export default function NavBar() {
                 Perfil
               </Link>
 
-              {user.rol === "admin" && (
+              {["admin", "empleado"].includes(user.rol) && (
                 <Link to="/admin" onClick={handleLinkClick} className="hover:text-amber-400">
-                  Admin
+                  Panel
                 </Link>
               )}
 
@@ -174,12 +171,10 @@ export default function NavBar() {
             </button>
           )}
 
-          {/* ✅ Carrito para mobile (NO cierra el menú) */}
           <div className="relative mt-2" ref={carritoRef}>
             <button
               onClick={() => {
                 setTimeout(() => setMostrarMiniCarrito((prev) => !prev), 0);
-                // ⚠️ No cerramos el menú hamburguesa aquí
               }}
               className="relative text-white hover:text-amber-400"
             >

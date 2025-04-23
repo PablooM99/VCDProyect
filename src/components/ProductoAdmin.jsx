@@ -15,6 +15,7 @@ import {
 } from "firebase/storage";
 import * as XLSX from "xlsx";
 import Swal from "sweetalert2";
+import { useAuth } from "../context/AuthContext";
 
 export default function ProductoAdmin() {
   const [productos, setProductos] = useState([]);
@@ -33,6 +34,7 @@ export default function ProductoAdmin() {
     imageFiles: [],
     imageUrls: [],
   });
+  const { user } = useAuth();
 
   useEffect(() => {
     cargarProductos();
@@ -333,12 +335,16 @@ export default function ProductoAdmin() {
                   </button>
                 </td>
                 <td>
-                  <button
-                    onClick={() => eliminarProducto(p.id)}
-                    className="bg-red-600 hover:bg-red-700 px-3 py-1 text-sm rounded"
-                  >
-                    🗑️ Borrar
-                  </button>
+                  {user?.rol === "admin" ? (
+                    <button
+                      onClick={() => eliminarProducto(p.id)}
+                      className="bg-red-600 hover:bg-red-700 px-3 py-1 text-sm rounded"
+                    >
+                      🗑️ Borrar
+                    </button>
+                  ) : (
+                    <span className="text-gray-500 text-xs italic">Sin permisos</span>
+                  )}
                 </td>
               </tr>
             ))}

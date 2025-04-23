@@ -9,6 +9,7 @@ export default function UsuariosAdmin() {
   const { user } = useAuth();
   const [usuarios, setUsuarios] = useState([]);
   const [filtro, setFiltro] = useState("");
+  const esEmpleado = user?.rol === "empleado";
 
   useEffect(() => {
     const fetchUsuarios = async () => {
@@ -24,7 +25,7 @@ export default function UsuariosAdmin() {
   }, []);
 
   const actualizarUsuario = async (id, campo, valor) => {
-    if (user?.rol === "empleado") {
+    if (esEmpleado) {
       return Swal.fire("❌ No tienes permisos para editar usuarios", "", "error");
     }
     try {
@@ -37,7 +38,7 @@ export default function UsuariosAdmin() {
   };
 
   const eliminarUsuario = async (id) => {
-    if (user?.rol === "empleado") {
+    if (esEmpleado) {
       return Swal.fire("❌ No tienes permisos para eliminar usuarios", "", "error");
     }
 
@@ -94,7 +95,7 @@ export default function UsuariosAdmin() {
                     value={u.nombre}
                     onChange={(e) => actualizarUsuario(u.id, "nombre", e.target.value)}
                     className="bg-gray-700 p-1 rounded w-full"
-                    disabled={user?.rol === "empleado"}
+                    disabled={esEmpleado}
                   />
                 </td>
                 <td className="text-sm text-gray-300">{u.email}</td>
@@ -103,7 +104,7 @@ export default function UsuariosAdmin() {
                     value={u.cuit || ""}
                     onChange={(e) => actualizarUsuario(u.id, "cuit", e.target.value)}
                     className="bg-gray-700 p-1 rounded w-full"
-                    disabled={user?.rol === "empleado"}
+                    disabled={esEmpleado}
                   />
                 </td>
                 <td>
@@ -111,7 +112,7 @@ export default function UsuariosAdmin() {
                     value={u.direccion || ""}
                     onChange={(e) => actualizarUsuario(u.id, "direccion", e.target.value)}
                     className="bg-gray-700 p-1 rounded w-full"
-                    disabled={user?.rol === "empleado"}
+                    disabled={esEmpleado}
                   />
                 </td>
                 <td>
@@ -119,7 +120,7 @@ export default function UsuariosAdmin() {
                     value={u.rol || "usuario"}
                     onChange={(e) => actualizarUsuario(u.id, "rol", e.target.value)}
                     className="bg-gray-700 p-1 rounded w-full"
-                    disabled={user?.rol === "empleado"}
+                    disabled={esEmpleado}
                   >
                     <option value="usuario">usuario</option>
                     <option value="empleado">empleado</option>
@@ -130,7 +131,7 @@ export default function UsuariosAdmin() {
                   <button
                     onClick={() => eliminarUsuario(u.id)}
                     className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
-                    disabled={user?.rol === "empleado"}
+                    disabled={esEmpleado}
                   >
                     Eliminar
                   </button>
