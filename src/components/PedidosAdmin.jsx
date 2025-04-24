@@ -54,6 +54,21 @@ export default function PedidosAdmin() {
     fetchPedidos();
   }, []);
 
+  const registrarLog = async (tipo, entidad, descripcion) => {
+    try {
+      await addDoc(collection(db, "logs"), {
+        tipo,
+        entidad,
+        descripcion,
+        userId: user?.uid || "desconocido",
+        userEmail: user?.email || "desconocido",
+        timestamp: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error("Error al registrar log:", error);
+    }
+  };
+
   const actualizarCampo = async (id, campo, valor) => {
     try {
       const refPedido = doc(db, "pedidos", id);
@@ -91,6 +106,9 @@ export default function PedidosAdmin() {
       setPedidos((prev) =>
         prev.map((p) => (p.id === id ? { ...p, [campo]: valor } : p))
       );
+
+      // Log de actualización
+      await registrarLog("actualizacion", "pedido", `Se actualizó el campo "${campo}" del pedido #${id} a "${valor}".`);
     } catch (error) {
       console.error(`Error al actualizar ${campo} del pedido:`, error);
     }
@@ -106,6 +124,9 @@ export default function PedidosAdmin() {
       await deleteDoc(doc(db, "pedidos", id));
       setPedidos((prev) => prev.filter((p) => p.id !== id));
       alert("🗑️ Pedido eliminado correctamente");
+
+      // Log de eliminación
+      await registrarLog("eliminacion", "pedido", `Se eliminó el pedido #${id}.`);
     } catch (error) {
       console.error("Error al eliminar pedido:", error);
     }

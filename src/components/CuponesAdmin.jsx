@@ -7,6 +7,8 @@ import {
   getDocs,
   getDoc,
   setDoc,
+  addDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../firebase/config";
 import Swal from "sweetalert2";
@@ -29,6 +31,21 @@ export default function CuponesAdmin() {
     cargarCupones();
   }, []);
 
+  const registrarLog = async (accion, descripcion) => {
+    try {
+      await addDoc(collection(db, "logs"), {
+        tipo: accion,
+        entidad: "cupón",
+        descripcion,
+        userId: user?.uid,
+        userEmail: user?.email,
+        timestamp: serverTimestamp(),
+      });
+    } catch (err) {
+      console.error("Error al registrar log:", err);
+    }
+  };
+
   const crearCupon = async () => {
     if (user?.rol === "empleado") {
       return Swal.fire("❌ No tienes permisos para crear cupones", "", "error");
@@ -44,6 +61,8 @@ export default function CuponesAdmin() {
       soloUnaVez: soloUnaVez,
     });
 
+    await registrarLog("creación", `Se creó el cupón ${cuponID} con ${descuento}% de descuento`);
+
     setCodigo("");
     setDescuento("");
     setSoloUnaVez(false);
@@ -57,6 +76,7 @@ export default function CuponesAdmin() {
     }
 
     await updateDoc(doc(db, "cupones", id), { activo: !estado });
+    await registrarLog("actualización", `Se cambió el estado del cupón ${id} a ${!estado ? "activo" : "inactivo"}`);
     cargarCupones();
   };
 
@@ -86,6 +106,7 @@ export default function CuponesAdmin() {
         }
       }
 
+      await registrarLog("eliminación", `Se eliminó el cupón ${id} y sus registros en usuarios`);
       await cargarCupones();
       Swal.fire("✅ Cupón eliminado", "Y también eliminado de los usuarios", "success");
     } catch (err) {

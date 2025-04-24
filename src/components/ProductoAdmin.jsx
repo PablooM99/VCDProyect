@@ -7,6 +7,8 @@ import {
   setDoc,
   doc,
   deleteDoc,
+  addDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 import {
   ref,
@@ -39,6 +41,22 @@ export default function ProductoAdmin() {
   useEffect(() => {
     cargarProductos();
   }, []);
+
+  const registrarLog = async (tipo, descripcion) => {
+    if (!user) return;
+    try {
+      await addDoc(collection(db, "logs"), {
+        tipo,
+        entidad: "producto",
+        descripcion,
+        userId: user.uid,
+        userEmail: user.email,
+        timestamp: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error("Error al registrar log:", error);
+    }
+  };
 
   const cargarProductos = async () => {
     try {
@@ -108,9 +126,9 @@ export default function ProductoAdmin() {
       };
 
       await setDoc(doc(db, "productos", id), nuevo);
+      await registrarLog("creación", `Se creó el producto "${title}" (ID: ${id})`);
 
-      const nuevos = [...productos, nuevo];
-      setProductos(nuevos);
+      setProductos((prev) => [...prev, nuevo]);
       Swal.fire("✅ Producto agregado con éxito", "", "success");
 
       setNuevoProducto({
@@ -145,6 +163,7 @@ export default function ProductoAdmin() {
         await deleteDoc(doc(db, "productos", id));
         setProductos((prev) => prev.filter((p) => p.id !== id));
         Swal.fire("✅ Producto eliminado correctamente", "", "success");
+        await registrarLog("eliminación", `Se eliminó el producto con ID: ${id}`);
       } catch (error) {
         console.error("Error al eliminar producto:", error);
       }
@@ -175,6 +194,7 @@ export default function ProductoAdmin() {
       await setDoc(refDoc, actualizado);
       setProductos((prev) => prev.map((p) => (p.id === id ? actualizado : p)));
       alert("✅ Imagen agregada.");
+      await registrarLog("edición", `Se agregó imagen a producto "${producto.title}" (ID: ${producto.id})`);
     } catch (error) {
       console.error("Error al agregar imagen:", error);
     }
@@ -205,6 +225,7 @@ export default function ProductoAdmin() {
         await setDoc(doc(colRef, prod.id), prod);
       }
       alert("✅ Cambios sincronizados con Firestore");
+      await registrarLog("edición", "Se sincronizaron los productos editados");
     } catch (error) {
       console.error("Error al sincronizar:", error);
     }

@@ -1,7 +1,15 @@
 // src/components/UsuariosAdmin.jsx
 import { useEffect, useState } from "react";
 import { db } from "../firebase/config";
-import { collection, getDocs, updateDoc, deleteDoc, doc } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  doc,
+  addDoc,
+  serverTimestamp,
+} from "firebase/firestore";
 import Swal from "sweetalert2";
 import { useAuth } from "../context/AuthContext";
 
@@ -24,6 +32,21 @@ export default function UsuariosAdmin() {
     fetchUsuarios();
   }, []);
 
+  const registrarLog = async ({ tipo, entidad, descripcion }) => {
+    try {
+      await addDoc(collection(db, "logs"), {
+        tipo,
+        entidad,
+        descripcion,
+        userId: user?.uid || "desconocido",
+        userEmail: user?.email || "desconocido",
+        timestamp: serverTimestamp(),
+      });
+    } catch (err) {
+      console.error("Error al registrar log:", err);
+    }
+  };
+
   const actualizarUsuario = async (id, campo, valor) => {
     if (esEmpleado) {
       return Swal.fire("❌ No tienes permisos para editar usuarios", "", "error");
@@ -32,6 +55,12 @@ export default function UsuariosAdmin() {
       const ref = doc(db, "usuarios", id);
       await updateDoc(ref, { [campo]: valor });
       setUsuarios(prev => prev.map(u => u.id === id ? { ...u, [campo]: valor } : u));
+
+      await registrarLog({
+        tipo: "actualización",
+        entidad: "usuario",
+        descripcion: `Se actualizó el campo '${campo}' del usuario ${id} a '${valor}'`,
+      });
     } catch (error) {
       console.error("Error al actualizar usuario:", error);
     }
@@ -56,6 +85,12 @@ export default function UsuariosAdmin() {
       await deleteDoc(doc(db, "usuarios", id));
       setUsuarios(prev => prev.filter(u => u.id !== id));
       Swal.fire("✅ Usuario eliminado", "", "success");
+
+      await registrarLog({
+        tipo: "eliminación",
+        entidad: "usuario",
+        descripcion: `Se eliminó el usuario con ID ${id}`,
+      });
     } catch (error) {
       console.error("Error al eliminar usuario:", error);
       Swal.fire("❌ Error al eliminar usuario", error.message, "error");
