@@ -14,7 +14,7 @@ export default function UserPanel() {
   const [email, setEmail] = useState(user?.email || "");
   const [cuit, setCuit] = useState("");
   const [direccion, setDireccion] = useState("");
-  const [telefono, setTelefono] = useState(""); // Nuevo campo
+  const [telefono, setTelefono] = useState("");
   const [nuevaPass, setNuevaPass] = useState("");
   const [passActual, setPassActual] = useState("");
   const [pedidos, setPedidos] = useState([]);
@@ -92,7 +92,11 @@ export default function UserPanel() {
     }
   };
 
-  const cancelarPedido = async (id) => {
+  const cancelarPedido = async (id, estado) => {
+    if (estado === "preparado" || estado === "entregado") {
+      return Swal.fire("⚠️ No se puede cancelar un pedido que ya fue preparado o entregado", "", "warning");
+    }
+
     const confirm = await Swal.fire({
       title: "¿Estás seguro?",
       text: "Esta acción eliminará tu pedido",
@@ -162,29 +166,40 @@ export default function UserPanel() {
         <div className="mt-12">
           <h2 className="text-2xl text-amber-300 font-semibold mb-4">📦 Mis pedidos</h2>
           <div className="space-y-4">
-            {pedidos.map((pedido) => (
-              <div key={pedido.id} className="bg-gray-800 p-4 rounded shadow">
-                <p className="text-sm text-purple-300 mb-1">🆔 {pedido.id}</p>
-                <p className="text-sm text-gray-300 mb-1">📅 {pedido.fecha?.toDate().toLocaleString()}</p>
-                <p className="text-sm text-gray-300 mb-3">
-                  🏷️ Estado: <span className="text-white font-semibold">{pedido.estado}</span>
-                </p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => cancelarPedido(pedido.id)}
-                    className="bg-red-600 hover:bg-red-700 text-white text-sm py-1 px-3 rounded"
-                  >
-                    Cancelar pedido
-                  </button>
-                  <Link
-                    to={`/pedido/${pedido.id}`}
-                    className="bg-blue-600 hover:bg-blue-700 text-white text-sm py-1 px-3 rounded"
-                  >
-                    Ver pedido
-                  </Link>
+            {pedidos.map((pedido) => {
+              const estado = pedido.estado?.toLowerCase();
+              const noCancelable = estado === "preparado" || estado === "entregado";
+
+              return (
+                <div key={pedido.id} className="bg-gray-800 p-4 rounded shadow">
+                  <p className="text-sm text-purple-300 mb-1">🆔 {pedido.id}</p>
+                  <p className="text-sm text-gray-300 mb-1">📅 {pedido.fecha?.toDate().toLocaleString()}</p>
+                  <p className="text-sm text-gray-300 mb-3">
+                    🏷️ Estado: <span className="text-white font-semibold">{pedido.estado}</span>
+                  </p>
+                  <div className="flex gap-3 items-center">
+                    <button
+                      onClick={() => cancelarPedido(pedido.id, pedido.estado)}
+                      disabled={noCancelable}
+                      className={`text-sm py-1 px-3 rounded flex items-center gap-1 ${
+                        noCancelable
+                          ? "bg-gray-600 text-gray-300 cursor-not-allowed"
+                          : "bg-red-600 hover:bg-red-700 text-white"
+                      }`}
+                      title={noCancelable ? "Este pedido ya no puede cancelarse" : ""}
+                    >
+                      {noCancelable && "🔒"} Cancelar pedido
+                    </button>
+                    <Link
+                      to={`/pedido/${pedido.id}`}
+                      className="bg-blue-600 hover:bg-blue-700 text-white text-sm py-1 px-3 rounded"
+                    >
+                      Ver pedido
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
