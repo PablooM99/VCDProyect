@@ -12,6 +12,7 @@ import DashboardAdmin from "../components/DashboardAdmin";
 import SoporteAdmin from "../pages/SoporteAdmin";
 import CuponesAdmin from "../components/CuponesAdmin";
 import PedidosPendientesAdmin from "../components/PedidosPendientesAdmin";
+import LogsAdmin from "../components/LogsAdmin";
 
 export default function AdminPanel() {
   const { user } = useAuth();
@@ -72,13 +73,10 @@ export default function AdminPanel() {
             Usuarios
           </button>
         )}
-
         {["admin", "empleado"].includes(rolAcceso) && (
           <button
             onClick={() => setTab("cupones")}
-            className={`px-4 py-2 rounded font-semibold ${
-              tab === "cupones" ? "bg-amber-500 text-black" : "bg-gray-700 text-white"
-            }`}
+            className={`px-4 py-2 rounded font-semibold ${tab === "cupones" ? "bg-amber-500 text-black" : "bg-gray-700 text-white"}`}
           >
             Cupones
           </button>
@@ -101,6 +99,14 @@ export default function AdminPanel() {
         >
           Soporte
         </button>
+        {user?.rol === "admin" && (
+          <button
+            onClick={() => setTab("logs")}
+            className={`px-4 py-2 rounded font-semibold ${tab === "logs" ? "bg-amber-500 text-black" : "bg-gray-700 text-white"}`}
+          >
+            📋 Logs
+          </button>
+        )}
       </div>
 
       <div className="mt-6">
@@ -112,6 +118,7 @@ export default function AdminPanel() {
         {tab === "soporte" && <SoporteAdmin />}
         {tab === "cupones" && ["admin", "empleado"].includes(rolAcceso) && <CuponesAdmin />}
         {tab === "pendientes" && <PedidosPendientesAdmin />}
+        {tab === "logs" && user?.rol === "admin" && <LogsAdmin />}
       </div>
     </div>
   );

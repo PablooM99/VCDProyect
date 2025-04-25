@@ -39,6 +39,7 @@ export default function CuponesAdmin() {
         descripcion,
         userId: user?.uid,
         userEmail: user?.email,
+        userName: user?.nombre || "desconocido",
         timestamp: serverTimestamp(),
       });
     } catch (err) {

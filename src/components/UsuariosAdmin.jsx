@@ -40,6 +40,7 @@ export default function UsuariosAdmin() {
         descripcion,
         userId: user?.uid || "desconocido",
         userEmail: user?.email || "desconocido",
+        userName: user?.nombre || "desconocido",
         timestamp: serverTimestamp(),
       });
     } catch (err) {

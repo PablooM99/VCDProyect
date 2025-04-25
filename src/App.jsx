@@ -1,4 +1,6 @@
 import { Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter as Router} from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
 import Home from "./pages/Home";
 import Productos from "./pages/Productos";
 import Carrito from "./pages/Carrito";
@@ -16,10 +18,12 @@ import PedidoDetalle from "./pages/PedidoDetalle";
 import SoporteAdmin from "./pages/SoporteAdmin";
 import Login from "./pages/Login";
 import Footer from "./components/Footer";
+import LogsAdmin from "./components/LogsAdmin";
 
 export default function App() {
   const location = useLocation();
   const esAdmin = location.pathname.startsWith("/admin");
+  const { user } = useAuth();
 
   return (
     <>
@@ -38,6 +42,9 @@ export default function App() {
         <Route path="/pedido/:id" element={<PedidoDetalle />} />
         <Route path="/admin/soporte" element={<SoporteAdmin />} />
         <Route path="/login" element={<Login />} />
+        {user?.rol === "admin" && (
+          <Route path="/admin/logs" element={<LogsAdmin />} />
+        )}
         <Route
           path="/admin"
           element={
