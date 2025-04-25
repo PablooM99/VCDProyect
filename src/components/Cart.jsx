@@ -1,9 +1,55 @@
 // src/components/Cart.jsx
 import { useCart } from "../context/CartContext";
+import { useEffect, useState } from "react";
+import { db } from "../firebase/config";
+import { collection, getDocs } from "firebase/firestore";
 import { Link } from "react-router-dom";
 
 export default function Cart() {
-  const { cart, removeFromCart, updateQuantity, totalItems, totalPrice, clearCart } = useCart();
+  const {
+    cart,
+    removeFromCart,
+    updateQuantity,
+    totalItems,
+    totalPrice,
+    totalConDescuento,
+    cupon,
+    descuentoCupon,
+    clearCart,
+  } = useCart();
+
+  const [descuentosCantidad, setDescuentosCantidad] = useState([]);
+
+  useEffect(() => {
+    const fetchDescuentos = async () => {
+      try {
+        const snap = await getDocs(collection(db, "descuentosPorCantidad"));
+        const lista = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        setDescuentosCantidad(lista);
+      } catch (err) {
+        console.error("Error al cargar descuentos por cantidad:", err);
+      }
+    };
+    fetchDescuentos();
+  }, []);
+
+  const calcularPrecioConDescuento = (item) => {
+    const descuento = descuentosCantidad.find(
+      (d) => d.productoId === item.id && item.cantidad >= d.cantidadMinima
+    );
+    if (descuento) {
+      const precioConDesc = item.price * (1 - descuento.descuento / 100);
+      return precioConDesc * item.cantidad;
+    } else {
+      return item.price * item.cantidad;
+    }
+  };
+
+  const calcularTotal = () => {
+    return cart.reduce((acc, item) => acc + calcularPrecioConDescuento(item), 0);
+  };
+
+  const totalConCupon = calcularTotal() * (1 - descuentoCupon / 100);
 
   return (
     <div className="p-6 text-white max-w-5xl mx-auto">
@@ -23,37 +69,74 @@ export default function Cart() {
               </tr>
             </thead>
             <tbody>
-              {cart.map((item) => (
-                <tr key={item.id} className="border-b border-gray-700">
-                  <td className="py-3">
-                    <div className="flex items-center gap-3">
-                      <img src={item.imageURL} alt={item.title} className="w-12 h-12 rounded object-cover" />
-                      <span>{item.title}</span>
-                    </div>
-                  </td>
-                  <td className="text-center">
-                    <input
-                      type="number"
-                      min={1}
-                      value={item.cantidad}
-                      onChange={(e) => updateQuantity(item.id, Number(e.target.value))}
-                      className="w-16 text-center bg-gray-800 text-white rounded p-1"
-                    />
-                  </td>
-                  <td className="text-right font-semibold">${(item.price * item.cantidad).toFixed(2)}</td>
-                  <td>
-                    <button onClick={() => removeFromCart(item.id)} className="text-red-500 hover:underline ml-4">
-                      Quitar
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {cart.map((item) => {
+                const descuento = descuentosCantidad.find(
+                  (d) => d.productoId === item.id && item.cantidad >= d.cantidadMinima
+                );
+                const precioUnitarioConDescuento = descuento
+                  ? item.price * (1 - descuento.descuento / 100)
+                  : item.price;
+
+                return (
+                  <tr key={item.id} className="border-b border-gray-700">
+                    <td className="py-3">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={item.imageURL}
+                          alt={item.title}
+                          className="w-12 h-12 rounded object-cover"
+                        />
+                        <span>{item.title}</span>
+                      </div>
+                    </td>
+                    <td className="text-center">
+                      <input
+                        type="number"
+                        min={1}
+                        value={item.cantidad}
+                        onChange={(e) =>
+                          updateQuantity(item.id, Number(e.target.value))
+                        }
+                        className="w-16 text-center bg-gray-800 text-white rounded p-1"
+                      />
+                    </td>
+                    <td className="text-right font-semibold">
+                      ${calcularPrecioConDescuento(item).toFixed(2)}
+                      {descuento && (
+                        <p className="text-xs text-green-400">
+                          {descuento.descuento}% OFF por cantidad
+                        </p>
+                      )}
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => removeFromCart(item.id)}
+                        className="text-red-500 hover:underline ml-4"
+                      >
+                        Quitar
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 
+          <div className="flex justify-between items-center text-lg mb-2">
+            <span>Subtotal con descuentos por cantidad:</span>
+            <span className="font-semibold">${calcularTotal().toFixed(2)}</span>
+          </div>
+
+          {cupon && (
+            <div className="flex justify-between items-center text-green-400 text-sm mb-4">
+              <span>🧾 Cupón "{cupon}" aplicado ({descuentoCupon}% OFF):</span>
+              <span>- ${((calcularTotal() * descuentoCupon) / 100).toFixed(2)}</span>
+            </div>
+          )}
+
           <div className="flex justify-between items-center text-xl font-bold mb-6">
-            <span>Total:</span>
-            <span>${totalPrice.toFixed(2)}</span>
+            <span>Total a pagar:</span>
+            <span>${totalConCupon.toFixed(2)}</span>
           </div>
 
           <div className="flex justify-between gap-4">

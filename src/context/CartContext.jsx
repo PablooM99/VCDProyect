@@ -1,6 +1,8 @@
 // src/context/CartContext.jsx
 import { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import { db } from "../firebase/config";
+import { collection, getDocs } from "firebase/firestore";
 
 const CartContext = createContext();
 export const useCart = () => useContext(CartContext);
@@ -17,6 +19,25 @@ export function CartProvider({ children }) {
     return d ? Number(d) : 0;
   });
 
+  const [descuentosCantidad, setDescuentosCantidad] = useState([]);
+
+  // Cargar descuentos por cantidad al inicio
+  useEffect(() => {
+    const cargarDescuentos = async () => {
+      try {
+        const snap = await getDocs(collection(db, "descuentosPorCantidad"));
+        const lista = snap.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setDescuentosCantidad(lista);
+      } catch (error) {
+        console.error("Error al cargar descuentos por cantidad:", error);
+      }
+    };
+    cargarDescuentos();
+  }, []);
+
   useEffect(() => {
     localStorage.setItem("carrito", JSON.stringify(cart));
   }, [cart]);
@@ -26,21 +47,34 @@ export function CartProvider({ children }) {
     localStorage.setItem("descuento", descuentoCupon.toString());
   }, [cupon, descuentoCupon]);
 
+  const aplicarDescuentoPorCantidad = (producto, cantidad) => {
+    const descuento = descuentosCantidad.find(
+      (d) => d.productoId === producto.id && cantidad >= d.cantidadMinima
+    );
+    if (descuento) {
+      const nuevoPrecio = producto.price * (1 - descuento.descuento / 100);
+      return parseFloat(nuevoPrecio.toFixed(2));
+    }
+    return producto.price;
+  };
+
   const addToCart = (producto, cantidad = 1) => {
     setCart((prev) => {
       const itemExistente = prev.find((p) => p.id === producto.id);
-  
+      const nuevaCantidad = itemExistente ? itemExistente.cantidad + cantidad : cantidad;
+      const precioConDescuento = aplicarDescuentoPorCantidad(producto, nuevaCantidad);
+
       let nuevoCart;
       if (itemExistente) {
         nuevoCart = prev.map((p) =>
           p.id === producto.id
-            ? { ...p, cantidad: p.cantidad + cantidad }
+            ? { ...p, cantidad: nuevaCantidad, price: precioConDescuento }
             : p
         );
       } else {
-        nuevoCart = [...prev, { ...producto, cantidad }];
+        nuevoCart = [...prev, { ...producto, cantidad, price: precioConDescuento }];
       }
-  
+
       if (cantidad > 1) {
         toast.success(`✅ Se agregaron ${cantidad} unidades de "${producto.title}"`);
       } else if (itemExistente) {
@@ -48,9 +82,21 @@ export function CartProvider({ children }) {
       } else {
         toast.success(`🛒 Producto "${producto.title}" agregado al carrito`);
       }
-  
+
       return nuevoCart;
     });
+  };
+
+  const updateQuantity = (id, nuevaCantidad) => {
+    setCart((prev) =>
+      prev.map((p) => {
+        if (p.id === id) {
+          const nuevoPrecio = aplicarDescuentoPorCantidad(p, nuevaCantidad);
+          return { ...p, cantidad: nuevaCantidad, price: nuevoPrecio };
+        }
+        return p;
+      })
+    );
   };
 
   const removeFromCart = (id) => {
@@ -58,10 +104,9 @@ export function CartProvider({ children }) {
     toast.error("❌ Producto eliminado del carrito");
   };
 
-  const updateQuantity = (id, cantidad) => {
-    setCart((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, cantidad } : p))
-    );
+  const clearCart = () => {
+    setCart([]);
+    localStorage.removeItem("carrito");
   };
 
   const aplicarCupon = (codigo, porcentaje) => {
@@ -99,6 +144,7 @@ export function CartProvider({ children }) {
         descuentoCupon,
         aplicarCupon,
         limpiarCupon,
+        clearCart,
       }}
     >
       {children}

@@ -13,6 +13,7 @@ import SoporteAdmin from "../pages/SoporteAdmin";
 import CuponesAdmin from "../components/CuponesAdmin";
 import PedidosPendientesAdmin from "../components/PedidosPendientesAdmin";
 import LogsAdmin from "../components/LogsAdmin";
+import DescuentosCantidadAdmin from "../components/DescuentoCantidadAdmin";
 
 export default function AdminPanel() {
   const { user } = useAuth();
@@ -99,6 +100,10 @@ export default function AdminPanel() {
         >
           Soporte
         </button>
+        <button onClick={() => setTab("descuentosCantidad")} 
+        className={`px-4 py-2 rounded font-semibold ${tab === "descuentosCantidad" ? "bg-amber-500 text-black" : "bg-gray-700 text-white"}`}>
+          Descuentos por Cantidad
+        </button>
         {user?.rol === "admin" && (
           <button
             onClick={() => setTab("logs")}
@@ -119,6 +124,7 @@ export default function AdminPanel() {
         {tab === "cupones" && ["admin", "empleado"].includes(rolAcceso) && <CuponesAdmin />}
         {tab === "pendientes" && <PedidosPendientesAdmin />}
         {tab === "logs" && user?.rol === "admin" && <LogsAdmin />}
+        {tab === "descuentosCantidad" && user?.rol === "admin" && <DescuentosCantidadAdmin />}
       </div>
     </div>
   );
