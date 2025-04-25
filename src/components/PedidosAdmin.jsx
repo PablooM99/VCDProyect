@@ -101,7 +101,7 @@ export default function PedidosAdmin() {
   };
 
   const crearPedidoManual = async () => {
-    const { userId, productos, metodoPago } = nuevoPedido;
+    const { userId, productos, metodoPago, cuponAplicado, descuento } = nuevoPedido;
     if (!userId || productos.length === 0) {
       Swal.fire("Faltan datos", "Selecciona un usuario y agrega al menos un producto", "error");
       return;
@@ -111,51 +111,86 @@ export default function PedidosAdmin() {
       const userDoc = await getDoc(doc(db, "usuarios", userId));
       const userEmail = userDoc.exists() ? userDoc.data().email : "-";
       const userNombre = userDoc.exists() ? userDoc.data().nombre : "-";
-      const userDireccion = userDoc.exists() ? userDoc.data().direccion || "-" : "-";
+      const direccion = userDoc.exists() ? userDoc.data().direccion || "-" : "-";
   
-      const subtotal = productos.reduce((acc, item) => acc + item.price * item.cantidad, 0);
-      const descuentoAplicado = isNaN(parseInt(nuevoPedido.descuento)) ? 0 : parseInt(nuevoPedido.descuento);
-      const totalConDescuento = subtotal * (1 - descuentoAplicado / 100);
-
-      const pedidoNuevo = {
-        items: productos,
-        userId,
-        userEmail,
-        fecha: serverTimestamp(),
-        estado: "pendiente",
-        metodoPago,
-        cuponAplicado: nuevoPedido.cuponAplicado || "",
-        descuento: descuentoAplicado,
-        total: parseFloat(totalConDescuento.toFixed(2)),
-        direccion: userDireccion
-      };
+      // Calcular total base
+      const totalBase = productos.reduce(
+        (acc, p) => acc + p.price * p.cantidad,
+        0
+      );
   
-      await addDoc(collection(db, "pedidos"), pedidoNuevo);
+      // Validar cupón antes de aplicar
+      let descuentoFinal = 0;
+      let cupValido = "";
   
-      await registrarLog("creacion", "pedido", `Se creó un nuevo pedido manual para ${userNombre} (${userEmail}).`);
-      // Si el cupón es de uso único, lo marcamos como usado por este usuario
-      if (pedidoNuevo.cuponAplicado && user?.rol !== "admin") {
-        const cuponRef = doc(db, "cupones", pedidoNuevo.cuponAplicado);
+      if (cuponAplicado?.trim()) {
+        const cuponRef = doc(db, "cupones", cuponAplicado);
         const cuponSnap = await getDoc(cuponRef);
 
         if (cuponSnap.exists()) {
-          const cuponData = cuponSnap.data();
-          if (cuponData.soloUnUso) {
-            const usuarioRef = doc(db, "usuarios", userId);
-            await updateDoc(usuarioRef, {
-              cuponesUsados: [...(userDoc.data().cuponesUsados || []), pedidoNuevo.cuponAplicado],
-            });
+          const cupon = cuponSnap.data();
+
+          if (cupon.activo) {
+            if (cupon.soloUnUso) {
+              const usadosSnap = await getDocs(collection(db, `usuarios/${userId}/cupones_usados`));
+              const yaUsado = usadosSnap.docs.some(doc => doc.data().codigo === cuponAplicado);
+
+              if (yaUsado) {
+                Swal.fire("Cupón ya usado", "Este cupón ya fue utilizado por este usuario", "info");
+                return;
+              }
+            }
+
+            // Cupón válido
+            descuentoFinal = cupon.descuento || 0;
+            cupValido = cuponAplicado;
+          } else {
+            Swal.fire("Cupón inactivo", "Este cupón no está activo", "warning");
           }
+        } else {
+          Swal.fire("Cupón inválido", "Este cupón no existe", "error");
         }
       }
 
   
+      const totalConDescuento = totalBase * (1 - descuentoFinal / 100);
+  
+      const pedidoNuevo = {
+        items: productos,
+        userId,
+        userEmail,
+        direccion,
+        fecha: serverTimestamp(),
+        estado: "pendiente",
+        metodoPago,
+        cuponAplicado: cupValido,
+        descuento: descuentoFinal,
+        total: parseFloat(totalConDescuento.toFixed(2)),
+      };
+  
+      const docRef = await addDoc(collection(db, "pedidos"), pedidoNuevo);
+  
+      if (cupValido && user?.rol !== "admin") {
+        await addDoc(collection(db, `usuarios/${userId}/cupones_usados`), {
+          codigo: cupValido,
+          fechaUso: serverTimestamp(),
+        });
+      }
+      
+  
+      await registrarLog("creacion", "pedido", `Se creó un nuevo pedido manual para ${userNombre} (${userEmail}).`);
       Swal.fire("Pedido creado", "El pedido fue generado correctamente", "success");
   
       setModalCrearPedido(false);
-      setNuevoPedido({ productos: [], userId: "", userEmail: "", metodoPago: "pendiente" });
+      setNuevoPedido({
+        productos: [],
+        userId: "",
+        userEmail: "",
+        metodoPago: "pendiente",
+        cuponAplicado: "",
+        descuento: 0,
+      });
   
-      // Recargar pedidos
       const snapshot = await getDocs(collection(db, "pedidos"));
       const pedidosActualizados = await Promise.all(snapshot.docs.map(async (docSnap) => {
         const pedido = { id: docSnap.id, ...docSnap.data() };
@@ -168,11 +203,13 @@ export default function PedidosAdmin() {
         return pedido;
       }));
       setPedidos(pedidosActualizados);
+  
     } catch (e) {
       console.error("Error al crear pedido manual:", e);
       Swal.fire("Error", "No se pudo crear el pedido", "error");
     }
   };
+  
 
   useEffect(() => {
     const fetchPedidos = async () => {
