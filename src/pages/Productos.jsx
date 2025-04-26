@@ -20,19 +20,7 @@ export default function Productos() {
 
   const { addToCart } = useCart();
   const loaderRef = useRef();
-
   const { toggleFavorito, isFavorito } = useFavoritos();
-
-
-
-  const filtrarUnicos = (array) => {
-    const vistos = new Set();
-    return array.filter((item) => {
-      if (vistos.has(item.id)) return false;
-      vistos.add(item.id);
-      return true;
-    });
-  };
 
   useEffect(() => {
     const cargarProductos = async () => {
@@ -43,7 +31,17 @@ export default function Productos() {
           id: doc.id,
           ...doc.data(),
         }));
-        const unicos = filtrarUnicos(datos);
+
+        // Eliminar duplicados por ID
+        const unicos = [];
+        const idsVistos = new Set();
+        for (const item of datos) {
+          if (!idsVistos.has(item.id)) {
+            idsVistos.add(item.id);
+            unicos.push(item);
+          }
+        }
+
         setProductos(unicos);
         setCategorias([...new Set(unicos.map((p) => p.categoria))]);
       } catch (error) {
@@ -64,7 +62,6 @@ export default function Productos() {
     const cantidad = cantidades[producto.id] || 1;
     addToCart(producto, cantidad);
   };
-  
 
   const exportarExcel = () => {
     const datosParaExcel = productos.map((p) => ({
@@ -79,13 +76,18 @@ export default function Productos() {
     XLSX.writeFile(workbook, "lista_precios.xlsx");
   };
 
+  const handleBusquedaChange = (e) => {
+    setBusqueda(e.target.value.toLowerCase());
+  };
+
   const productosFiltrados = productos
-    .filter((prod) =>
-      prod.title.toLowerCase().includes(busqueda.toLowerCase())
-    )
-    .filter((prod) =>
-      categoriaFiltro ? prod.categoria === categoriaFiltro : true
-    );
+    .filter((prod) => {
+      const palabras = busqueda.split(" ");
+      return palabras.every((palabra) =>
+        prod.title.toLowerCase().includes(palabra) || prod.id.toLowerCase().includes(palabra)
+      );
+    })
+    .filter((prod) => (categoriaFiltro ? prod.categoria === categoriaFiltro : true));
 
   const productosAMostrar = productosFiltrados.slice(0, mostrar);
 
@@ -135,7 +137,7 @@ export default function Productos() {
           type="text"
           placeholder="🔍 Buscar productos..."
           value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
+          onChange={handleBusquedaChange}
           className="bg-gray-800 text-white px-4 py-2 rounded w-full sm:w-1/3"
         />
         <select
@@ -185,11 +187,11 @@ export default function Productos() {
             <button
               onClick={() => toggleFavorito(prod)}
               className={`text-xl absolute top-2 right-2 ${
-                  isFavorito(prod.id) ? "text-red-500" : "text-white"
-               }`}
-                >
-                ❤️
-              </button>
+                isFavorito(prod.id) ? "text-red-500" : "text-white"
+              }`}
+            >
+              ❤️
+            </button>
             <div className="flex-1">
               <h3 className="font-bold text-lg text-amber-300">{prod.title}</h3>
               <p className="text-sm text-gray-300 mb-1">{prod.categoria}</p>

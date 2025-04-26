@@ -21,7 +21,6 @@ export function CartProvider({ children }) {
 
   const [descuentosCantidad, setDescuentosCantidad] = useState([]);
 
-  // Cargar descuentos por cantidad al inicio
   useEffect(() => {
     const cargarDescuentos = async () => {
       try {
@@ -47,32 +46,49 @@ export function CartProvider({ children }) {
     localStorage.setItem("descuento", descuentoCupon.toString());
   }, [cupon, descuentoCupon]);
 
-  const aplicarDescuentoPorCantidad = (producto, cantidad) => {
+  const aplicarDescuentoPorCantidad = (productoId, cantidad, precioBase) => {
     const descuento = descuentosCantidad.find(
-      (d) => d.productoId === producto.id && cantidad >= d.cantidadMinima
+      (d) => d.productoId === productoId && cantidad >= d.cantidadMinima
     );
     if (descuento) {
-      const nuevoPrecio = producto.price * (1 - descuento.descuento / 100);
+      const nuevoPrecio = precioBase * (1 - descuento.descuento / 100);
       return parseFloat(nuevoPrecio.toFixed(2));
     }
-    return producto.price;
+    return precioBase;
   };
 
   const addToCart = (producto, cantidad = 1) => {
     setCart((prev) => {
       const itemExistente = prev.find((p) => p.id === producto.id);
-      const nuevaCantidad = itemExistente ? itemExistente.cantidad + cantidad : cantidad;
-      const precioConDescuento = aplicarDescuentoPorCantidad(producto, nuevaCantidad);
 
       let nuevoCart;
+      const precioOriginal = producto.precioOriginal || producto.price;
+
       if (itemExistente) {
-        nuevoCart = prev.map((p) =>
-          p.id === producto.id
-            ? { ...p, cantidad: nuevaCantidad, price: precioConDescuento }
-            : p
-        );
+        nuevoCart = prev.map((p) => {
+          if (p.id === producto.id) {
+            const nuevaCantidad = p.cantidad + cantidad;
+            const nuevoPrecio = aplicarDescuentoPorCantidad(p.id, nuevaCantidad, p.precioOriginal || precioOriginal);
+            return {
+              ...p,
+              cantidad: nuevaCantidad,
+              price: nuevoPrecio,
+              precioOriginal: p.precioOriginal || precioOriginal,
+            };
+          }
+          return p;
+        });
       } else {
-        nuevoCart = [...prev, { ...producto, cantidad, price: precioConDescuento }];
+        const nuevoPrecio = aplicarDescuentoPorCantidad(producto.id, cantidad, precioOriginal);
+        nuevoCart = [
+          ...prev,
+          {
+            ...producto,
+            cantidad,
+            price: nuevoPrecio,
+            precioOriginal,
+          },
+        ];
       }
 
       if (cantidad > 1) {
@@ -91,8 +107,14 @@ export function CartProvider({ children }) {
     setCart((prev) =>
       prev.map((p) => {
         if (p.id === id) {
-          const nuevoPrecio = aplicarDescuentoPorCantidad(p, nuevaCantidad);
-          return { ...p, cantidad: nuevaCantidad, price: nuevoPrecio };
+          const precioBase = p.precioOriginal || p.price;
+          const nuevoPrecio = aplicarDescuentoPorCantidad(p.id, nuevaCantidad, precioBase);
+          return {
+            ...p,
+            cantidad: nuevaCantidad,
+            price: nuevoPrecio,
+            precioOriginal: precioBase,
+          };
         }
         return p;
       })
