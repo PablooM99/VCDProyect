@@ -14,7 +14,7 @@ import CuponesAdmin from "../components/CuponesAdmin";
 import PedidosPendientesAdmin from "../components/PedidosPendientesAdmin";
 import LogsAdmin from "../components/LogsAdmin";
 import DescuentosCantidadAdmin from "../components/DescuentoCantidadAdmin";
-import GestionContenidoAdmin from './GestionContenidoAdmin';
+import GestionContenidoAdmin from "../components/GestionContenidoAdmin";
 
 
 export default function AdminPanel() {
