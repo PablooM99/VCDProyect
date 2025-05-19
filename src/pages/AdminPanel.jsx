@@ -14,6 +14,8 @@ import CuponesAdmin from "../components/CuponesAdmin";
 import PedidosPendientesAdmin from "../components/PedidosPendientesAdmin";
 import LogsAdmin from "../components/LogsAdmin";
 import DescuentosCantidadAdmin from "../components/DescuentoCantidadAdmin";
+import GestionContenidoAdmin from './GestionContenidoAdmin';
+
 
 export default function AdminPanel() {
   const { user } = useAuth();
@@ -94,15 +96,23 @@ export default function AdminPanel() {
         >
           Pedidos Pendientes
         </button>
+        <button onClick={() => setTab("descuentosCantidad")} 
+        className={`px-4 py-2 rounded font-semibold ${tab === "descuentosCantidad" ? "bg-amber-500 text-black" : "bg-gray-700 text-white"}`}>
+          Descuentos por Cantidad
+        </button>
+          {["admin", "empleado"].includes(rolAcceso) && (
+            <button
+              onClick={() => setTab("contenido")}
+              className={`px-4 py-2 rounded font-semibold ${tab === "contenido" ? "bg-amber-500 text-black" : "bg-gray-700 text-white"}`}
+            >
+              Contenido del Sitio
+            </button>
+          )}
         <button
           onClick={() => setTab("soporte")}
           className={`px-4 py-2 rounded font-semibold ${tab === "soporte" ? "bg-amber-500 text-black" : "bg-gray-700 text-white"}`}
         >
           Soporte
-        </button>
-        <button onClick={() => setTab("descuentosCantidad")} 
-        className={`px-4 py-2 rounded font-semibold ${tab === "descuentosCantidad" ? "bg-amber-500 text-black" : "bg-gray-700 text-white"}`}>
-          Descuentos por Cantidad
         </button>
         {user?.rol === "admin" && (
           <button
@@ -120,11 +130,12 @@ export default function AdminPanel() {
         {tab === "pedidos" && <PedidosAdmin />}
         {tab === "usuarios" && ["admin", "empleado"].includes(rolAcceso) && <UsuariosAdmin />}
         {tab === "categorias" && <ProductosPorCategoria />}
-        {tab === "soporte" && <SoporteAdmin />}
         {tab === "cupones" && ["admin", "empleado"].includes(rolAcceso) && <CuponesAdmin />}
         {tab === "pendientes" && <PedidosPendientesAdmin />}
-        {tab === "logs" && user?.rol === "admin" && <LogsAdmin />}
         {tab === "descuentosCantidad" && user?.rol === "admin" && <DescuentosCantidadAdmin />}
+        {tab === "contenido" && ["admin", "empleado"].includes(rolAcceso) && <GestionContenidoAdmin />}
+        {tab === "soporte" && <SoporteAdmin />}
+        {tab === "logs" && user?.rol === "admin" && <LogsAdmin />}
       </div>
     </div>
   );
