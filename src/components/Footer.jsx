@@ -34,11 +34,11 @@ export default function Footer() {
             </li>
             <li className="flex items-center gap-2">
               <FaEnvelope className="text-blue-300" />
-              <a href="mailto:contacto@tusitio.com" className="hover:text-amber-400">Email</a>
+              <a href="mailto:montenegrop681@gmail.com" className="hover:text-amber-400">Email</a>
             </li>
             <li className="flex items-center gap-2">
               <FaInstagram className="text-pink-400" />
-              <a href="https://instagram.com/tusitio" target="_blank" rel="noopener noreferrer" className="hover:text-amber-400">
+              <a href="https://instagram.com/pabloom99" target="_blank" rel="noopener noreferrer" className="hover:text-amber-400">
                 Instagram
               </a>
             </li>
@@ -51,7 +51,6 @@ export default function Footer() {
           <ul className="space-y-2 text-gray-300">
             <li><a href="/panel" className="hover:text-amber-400">Mi Cuenta</a></li>
             <li><a href="/carrito" className="hover:text-amber-400">Carrito de Compras</a></li>
-            <li><a href="/checkout" className="hover:text-amber-400">Finalizar Pedido</a></li>
           </ul>
         </div>
       </div>
