@@ -2,7 +2,7 @@
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import Swal from "sweetalert2";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { db } from "../firebase/config";
 import { doc, getDoc } from "firebase/firestore";
@@ -26,13 +26,8 @@ export default function Carrito() {
   const [cuponInput, setCuponInput] = useState("");
   const navigate = useNavigate();
 
-  useEffect(() => {
-    localStorage.setItem("carrito", JSON.stringify(cart));
-  }, [cart]);
-
   const vaciarCarrito = () => {
     setCart([]);
-    localStorage.removeItem("carrito");
     limpiarCupon();
     Swal.fire("🧹 Carrito vaciado", "Tu carrito fue vaciado correctamente", "success");
   };
@@ -226,9 +221,9 @@ export default function Carrito() {
           </div>
 
           <div className="mt-4">
-            <a href="/productos" className="text-amber-400 hover:underline">
+            <Link to="/productos" className="text-amber-400 hover:underline">
               ← Seguir comprando
-            </a>
+            </Link>
           </div>
         </>
       )}
