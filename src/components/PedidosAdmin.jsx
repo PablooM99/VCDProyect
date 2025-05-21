@@ -42,6 +42,11 @@ export default function PedidosAdmin() {
   const [productosBD, setProductosBD] = useState([]);
   const [productoBuscado, setProductoBuscado] = useState(null);
   const [productosDisponibles, setProductosDisponibles] = useState([]);
+  const [pedidoEditando, setPedidoEditando] = useState(null);
+  const [productoBuscadoEdicion, setProductoBuscadoEdicion] = useState(null);
+  const [nuevoProductoEdicion, setNuevoProductoEdicion] = useState({ id: "", cantidad: "" });
+  const [modalEditarVisible, setModalEditarVisible] = useState(false);
+
 
   useEffect(() => {
     const fetchProductos = async () => {
@@ -99,6 +104,39 @@ export default function PedidosAdmin() {
     setNuevoProducto({ id: "" });
     setProductoBuscado(null);
   };
+
+  const actualizarPedidoEditado = async () => {
+    if (!pedidoEditando || !pedidoEditando.id) return;
+  
+    const total = pedidoEditando.items.reduce((acc, p) => acc + p.price * p.cantidad, 0);
+    const totalConDescuento = total * (1 - (pedidoEditando.descuento || 0) / 100);
+  
+    const datosActualizados = {
+      ...pedidoEditando,
+      total: parseFloat(totalConDescuento.toFixed(2)),
+    };
+  
+    try {
+      await updateDoc(doc(db, "pedidos", pedidoEditando.id), datosActualizados);
+  
+      await registrarLog(
+        "actualizacion",
+        "pedido",
+        `Se editó el pedido #${pedidoEditando.id} (usuario: ${pedidoEditando.usuario || pedidoEditando.userEmail || "-"})`
+      );
+  
+      Swal.fire("✅ Pedido actualizado", "El pedido se modificó correctamente", "success");
+      setModalEditarVisible(false);
+  
+      const snap = await getDocs(collection(db, "pedidos"));
+      const pedidosActualizados = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setPedidos(pedidosActualizados);
+    } catch (e) {
+      console.error("Error actualizando pedido:", e);
+      Swal.fire("Error", "No se pudo actualizar el pedido", "error");
+    }
+  };
+  
 
   const crearPedidoManual = async () => {
     const { userId, productos, metodoPago, cuponAplicado, descuento } = nuevoPedido;
@@ -576,6 +614,19 @@ export default function PedidosAdmin() {
                     ))}
                   </select>
                 </td>
+                {(user?.rol === "admin" || (user?.rol === "empleado" && pedido.estado === "pendiente")) && (
+                  <td>
+                    <button
+                      onClick={() => {
+                        setPedidoEditando(pedido);
+                        setModalEditarVisible(true);
+                      }}
+                      className="text-blue-400 hover:text-blue-600 text-sm"
+                    >
+                      ✏️ Editar
+                    </button>
+                  </td>
+                )}
                 <td>
                   <button
                     onClick={() => eliminarPedido(pedido.id)}
@@ -620,6 +671,291 @@ export default function PedidosAdmin() {
           </div>
         </div>
       )}
+      {modalEditarVisible && pedidoEditando && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="bg-gray-900 p-6 rounded-lg max-w-2xl w-full relative">
+            <h3 className="text-lg text-amber-400 font-semibold mb-4">✏️ Editar Pedido #{pedidoEditando.id}</h3>
+
+            <div className="mb-4">
+              <label className="block mb-1 text-sm text-white">🧾 Productos:</label>
+              {pedidoEditando.items.map((item, idx) => (
+                <div key={idx} className="flex items-center gap-2 mb-2">
+                  <span className="text-white text-sm flex-1">{item.title}</span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={item.cantidad}
+                    onChange={(e) => {
+                      const nuevaCantidad = parseInt(e.target.value);
+                      setPedidoEditando((prev) => {
+                        const actualizados = [...prev.items];
+                        actualizados[idx].cantidad = nuevaCantidad;
+                        return { ...prev, items: actualizados };
+                      });
+                    }}
+                    className="w-16 p-1 text-center bg-gray-800 text-white rounded"
+                  />
+                  <button
+                    onClick={() => {
+                      setPedidoEditando((prev) => ({
+                        ...prev,
+                        items: prev.items.filter((_, i) => i !== idx),
+                      }));
+                    }}
+                    className="text-red-500 hover:text-red-700"
+                    title="Eliminar producto"
+                  >
+                    ✖
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="mb-4">
+  <label className="block mb-1 text-sm text-white">➕ Buscar producto para agregar:</label>
+  <input
+    type="text"
+    placeholder="ID o título del producto"
+    value={nuevoProductoEdicion.id}
+    onChange={(e) => {
+      const valor = e.target.value.toLowerCase();
+      setNuevoProductoEdicion({ ...nuevoProductoEdicion, id: valor });
+
+      const palabras = valor.split(" ").filter(Boolean);
+      const encontrado = productosBD.find((p) =>
+        palabras.every((palabra) => p.title.toLowerCase().includes(palabra))
+      );
+
+      setProductoBuscadoEdicion(encontrado || null);
+    }}
+    className="w-full mb-2 p-2 rounded bg-gray-800 text-white"
+  />
+
+  {productoBuscadoEdicion && (
+    <div className="bg-gray-700 p-3 rounded mb-2">
+      <p className="text-white font-bold">{productoBuscadoEdicion.title}</p>
+      <p className="text-white text-sm">💲 Precio: ${productoBuscadoEdicion.price}</p>
+      {productoBuscadoEdicion.imageURLs?.[0] && (
+        <img
+          src={productoBuscadoEdicion.imageURLs[0]}
+          alt={productoBuscadoEdicion.title}
+          className="w-24 mt-2 rounded"
+        />
+      )}
+
+      <input
+        type="number"
+        min="1"
+        placeholder="Cantidad"
+        value={nuevoProductoEdicion.cantidad || ""}
+        onChange={(e) => {
+          const valor = parseInt(e.target.value);
+          if (valor >= 1 || e.target.value === "") {
+            setNuevoProductoEdicion({ ...nuevoProductoEdicion, cantidad: e.target.value });
+          }
+        }}
+        className="mt-2 p-2 w-full rounded bg-gray-800 text-white"
+      />
+
+      <button
+        onClick={() => {
+          if (!productoBuscadoEdicion || !nuevoProductoEdicion.cantidad) {
+            Swal.fire("Faltan datos", "Seleccioná un producto y la cantidad", "warning");
+            return;
+          }
+        
+          const cantidadNueva = parseInt(nuevoProductoEdicion.cantidad);
+        
+          setPedidoEditando((prev) => {
+            const yaExiste = prev.items.find((item) => item.id === productoBuscadoEdicion.id);
+        
+            let nuevosItems;
+        
+            if (yaExiste) {
+              nuevosItems = prev.items.map((item) =>
+                item.id === productoBuscadoEdicion.id
+                  ? { ...item, cantidad: item.cantidad + cantidadNueva }
+                  : item
+              );
+            } else {
+              nuevosItems = [
+                ...prev.items,
+                {
+                  id: productoBuscadoEdicion.id,
+                  title: productoBuscadoEdicion.title,
+                  price: productoBuscadoEdicion.price,
+                  cantidad: cantidadNueva,
+                },
+              ];
+            }
+        
+            return {
+              ...prev,
+              items: nuevosItems,
+            };
+          });
+        
+          setNuevoProductoEdicion({ id: "", cantidad: "" });
+          setProductoBuscadoEdicion(null);
+        }}
+        
+        className="mt-2 bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-white w-full"
+      >
+        Agregar al pedido
+      </button>
+    </div>
+  )}
+</div>
+
+
+<div className="mb-4">
+  <label className="block mb-1 text-sm text-white">🎁 Agregar cupón:</label>
+
+  <div className="flex gap-2 mb-2">
+    <input
+      type="text"
+      value={nuevoProductoEdicion.codigoCupon || ""}
+      onChange={(e) =>
+        setNuevoProductoEdicion((prev) => ({
+          ...prev,
+          codigoCupon: e.target.value,
+        }))
+      }
+      className="w-full p-2 rounded bg-gray-800 text-white"
+      placeholder="Ej: PROMO10"
+    />
+    <button
+      onClick={async () => {
+        const codigo = nuevoProductoEdicion.codigoCupon?.toUpperCase().trim();
+        if (!codigo) {
+          Swal.fire("Código vacío", "Ingresá un código de cupón", "warning");
+          return;
+        }
+
+        if (pedidoEditando.cuponesAplicados?.some(c => c.codigo === codigo)) {
+          Swal.fire("Ya aplicado", "Ese cupón ya fue aplicado a este pedido", "info");
+          return;
+        }
+
+        try {
+          const ref = doc(db, "cupones", codigo);
+          const snap = await getDoc(ref);
+          if (!snap.exists()) {
+            Swal.fire("Cupón inválido", "El cupón no existe", "error");
+            return;
+          }
+
+          const cupon = snap.data();
+          if (!cupon.activo) {
+            Swal.fire("Cupón inactivo", "Este cupón no está activo", "warning");
+            return;
+          }
+
+          setPedidoEditando((prev) => ({
+            ...prev,
+            cuponesAplicados: [
+              ...(prev.cuponesAplicados || []),
+              {
+                codigo,
+                descuento: cupon.descuento || 0,
+              },
+            ],
+          }));
+
+          setNuevoProductoEdicion((prev) => ({ ...prev, codigoCupon: "" }));
+
+          Swal.fire("Aplicado", `Se aplicó el cupón ${codigo} (${cupon.descuento}%)`, "success");
+        } catch (err) {
+          console.error("Error al validar cupón:", err);
+          Swal.fire("Error", "No se pudo validar el cupón", "error");
+        }
+      }}
+      className="bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-white"
+    >
+      Aplicar
+    </button>
+  </div>
+
+  {/* Mostrar cupones aplicados */}
+  {pedidoEditando.cuponesAplicados?.length > 0 && (
+    <div className="bg-gray-800 p-3 rounded">
+      <p className="text-white font-semibold mb-2">Cupones aplicados:</p>
+      <ul className="text-sm text-white space-y-1">
+        {pedidoEditando.cuponesAplicados.map((cupon, index) => (
+          <li key={index} className="flex justify-between items-center">
+            <span>
+              {cupon.codigo} – {cupon.descuento}% OFF
+            </span>
+            <button
+              onClick={() =>
+                setPedidoEditando((prev) => ({
+                  ...prev,
+                  cuponesAplicados: prev.cuponesAplicados.filter((_, i) => i !== index),
+                }))
+              }
+              className="text-red-500 hover:text-red-700"
+              title="Quitar cupón"
+            >
+              ❌
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )}
+</div>
+
+
+
+            <div className="mb-4">
+              <label className="block mb-1 text-sm text-white">💳 Método de Pago:</label>
+              <select
+                value={pedidoEditando.metodoPago || ""}
+                onChange={(e) =>
+                  setPedidoEditando((prev) => ({ ...prev, metodoPago: e.target.value }))
+                }
+                className="w-full p-2 rounded bg-gray-800 text-white"
+              >
+                <option value="">Seleccionar método</option>
+                <option value="pendiente">Pendiente</option>
+                <option value="efectivo">Efectivo</option>
+                <option value="cheque">Cheque</option>
+                <option value="echeq">eCheq</option>
+                <option value="transferencia">Transferencia</option>
+                <option value="pagado (MercadoPago)">Pagado (MercadoPago)</option>
+              </select>
+            </div>
+
+            <div className="mb-4 text-white">
+              <p>Total: ${pedidoEditando.items.reduce((acc, p) => acc + p.price * p.cantidad, 0).toFixed(2)}</p>
+              <p>
+  Total con descuento:
+  ${(
+    pedidoEditando.items.reduce((acc, p) => acc + p.price * p.cantidad, 0) *
+    (1 - (pedidoEditando.cuponesAplicados?.reduce((acc, c) => acc + c.descuento, 0) || 0) / 100)
+  ).toFixed(2)}
+</p>
+
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setModalEditarVisible(false)}
+                className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded text-white"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={actualizarPedidoEditado}
+                className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-white"
+              >
+                Guardar Cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {modalCrearPedido && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
           <div className="bg-gray-900 p-6 rounded-lg max-w-xl w-full relative">
