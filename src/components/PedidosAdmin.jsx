@@ -108,11 +108,19 @@ export default function PedidosAdmin() {
   const actualizarPedidoEditado = async () => {
     if (!pedidoEditando || !pedidoEditando.id) return;
   
-    const total = pedidoEditando.items.reduce((acc, p) => acc + p.price * p.cantidad, 0);
-    const totalConDescuento = total * (1 - (pedidoEditando.descuento || 0) / 100);
+    const totalBase = pedidoEditando.items.reduce((acc, p) => acc + p.price * p.cantidad, 0);
+    const descuentoTotal = (pedidoEditando.cuponesAplicados || []).reduce(
+      (acc, cupon) => acc + (cupon.descuento || 0),
+      0
+    );
+  
+    const totalConDescuento = totalBase * (1 - descuentoTotal / 100);
   
     const datosActualizados = {
-      ...pedidoEditando,
+      items: pedidoEditando.items,
+      metodoPago: pedidoEditando.metodoPago || "pendiente",
+      cuponesAplicados: pedidoEditando.cuponesAplicados || [],
+      descuento: descuentoTotal,
       total: parseFloat(totalConDescuento.toFixed(2)),
     };
   
@@ -122,7 +130,7 @@ export default function PedidosAdmin() {
       await registrarLog(
         "actualizacion",
         "pedido",
-        `Se editó el pedido #${pedidoEditando.id} (usuario: ${pedidoEditando.usuario || pedidoEditando.userEmail || "-"})`
+        `Se editó el pedido #${pedidoEditando.id} (usuario: ${pedidoEditando.usuario || pedidoEditando.userEmail || "-"}) con ${pedidoEditando.items.length} productos y ${descuentoTotal}% de descuento total.`
       );
   
       Swal.fire("✅ Pedido actualizado", "El pedido se modificó correctamente", "success");
@@ -136,6 +144,7 @@ export default function PedidosAdmin() {
       Swal.fire("Error", "No se pudo actualizar el pedido", "error");
     }
   };
+  
   
 
   const crearPedidoManual = async () => {
