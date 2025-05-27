@@ -15,6 +15,7 @@ import PedidosPendientesAdmin from "../components/PedidosPendientesAdmin";
 import LogsAdmin from "../components/LogsAdmin";
 import DescuentosCantidadAdmin from "../components/DescuentoCantidadAdmin";
 import GestionContenidoAdmin from "../components/GestionContenidoAdmin";
+import FacturacionAdmin from "../components/FacturacionAdmin";
 
 
 export default function AdminPanel() {
@@ -108,6 +109,15 @@ export default function AdminPanel() {
               Contenido del Sitio
             </button>
           )}
+          {["admin", "empleado"].includes(rolAcceso) && (
+            <button
+              onClick={() => setTab("facturacion")}
+              className={`px-4 py-2 rounded font-semibold ${tab === "facturacion" ? "bg-amber-500 text-black" : "bg-gray-700 text-white"}`}
+            >
+              📄 Facturación
+            </button>
+          )}
+
         <button
           onClick={() => setTab("soporte")}
           className={`px-4 py-2 rounded font-semibold ${tab === "soporte" ? "bg-amber-500 text-black" : "bg-gray-700 text-white"}`}
@@ -134,6 +144,7 @@ export default function AdminPanel() {
         {tab === "pendientes" && <PedidosPendientesAdmin />}
         {tab === "descuentosCantidad" && user?.rol === "admin" && <DescuentosCantidadAdmin />}
         {tab === "contenido" && ["admin", "empleado"].includes(rolAcceso) && <GestionContenidoAdmin />}
+        {tab === "facturacion" && ["admin", "empleado"].includes(rolAcceso) && <FacturacionAdmin />}
         {tab === "soporte" && <SoporteAdmin />}
         {tab === "logs" && user?.rol === "admin" && <LogsAdmin />}
       </div>
