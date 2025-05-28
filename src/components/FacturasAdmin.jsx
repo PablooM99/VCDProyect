@@ -15,6 +15,15 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import Swal from "sweetalert2";
 
+// Función utilitaria para normalizar texto y hacer búsqueda flexible
+function normalizarTexto(txt) {
+  return (txt || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w\s]/gi, "");
+}
+
 export default function FacturasAdmin() {
   const { userData } = useAuth();
   const isAdmin = userData?.rol === "admin";
@@ -66,6 +75,7 @@ export default function FacturasAdmin() {
 
     fetchData();
   }, []);
+
   const validarCupon = async () => {
     if (!facturaData.cupon) return;
 
@@ -300,22 +310,60 @@ export default function FacturasAdmin() {
       {(modo === "manual" || modo === "pedido" || modo === "remito") && (
         <div className="mt-4">
           <h3 className="text-lg font-bold mb-2 text-white">➕ Agregar producto manualmente</h3>
+
+          {/* Busqueda flexible de producto */}
           <input
             type="text"
-            placeholder="Buscar producto"
+            placeholder="Buscar producto por nombre, modelo, etc."
             value={productoBuscado}
-            onChange={(e) => {
-              const val = e.target.value.toLowerCase();
+            onChange={e => {
+              const val = e.target.value;
               setProductoBuscado(val);
-              const encontrado = productosDisponibles.find(
-                (p) =>
-                  p.title.toLowerCase().includes(val) ||
-                  p.id.toLowerCase().includes(val)
-              );
-              setProductoSeleccionado(encontrado || null);
+
+              const claves = normalizarTexto(val).split(" ").filter(Boolean);
+
+              const filtrados = productosDisponibles.filter(p => {
+                const nombre = normalizarTexto(p.title || p.nombre || "");
+                return claves.every(clave => nombre.includes(clave));
+              });
+
+              setProductoSeleccionado(filtrados[0] || null);
             }}
             className="w-full p-2 mb-2 bg-gray-700 rounded"
           />
+
+          {/* Lista de resultados flexibles */}
+          {productoBuscado && (
+            <div className="bg-gray-800 rounded mb-2 max-h-48 overflow-auto shadow">
+              {productosDisponibles
+                .filter(p => {
+                  const claves = normalizarTexto(productoBuscado).split(" ").filter(Boolean);
+                  const nombre = normalizarTexto(p.title || p.nombre || "");
+                  return claves.every(clave => nombre.includes(clave));
+                })
+                .slice(0, 10)
+                .map(p => (
+                  <div
+                    key={p.id}
+                    className={`p-2 hover:bg-blue-800 cursor-pointer ${
+                      productoSeleccionado?.id === p.id ? "bg-blue-900" : ""
+                    }`}
+                    onClick={() => setProductoSeleccionado(p)}
+                  >
+                    <span className="font-semibold">{p.title}</span>
+                    <span className="ml-2 text-green-400">${p.precioVenta?.toFixed(2)}</span>
+                  </div>
+                ))}
+              {productosDisponibles.filter(p => {
+                const claves = normalizarTexto(productoBuscado).split(" ").filter(Boolean);
+                const nombre = normalizarTexto(p.title || p.nombre || "");
+                return claves.every(clave => nombre.includes(clave));
+              }).length === 0 && (
+                <div className="p-2 text-gray-400">No se encontró ningún producto</div>
+              )}
+            </div>
+          )}
+
           {productoSeleccionado && (
             <div className="bg-gray-900 p-3 rounded mb-3">
               <p className="text-white font-semibold">{productoSeleccionado.title}</p>
@@ -456,7 +504,6 @@ export default function FacturasAdmin() {
           )}
         </div>
       </div>
-
 
       <button
         onClick={handleGenerarFactura}
