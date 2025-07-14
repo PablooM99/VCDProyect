@@ -95,6 +95,9 @@ export default function Register() {
           required
           className="mb-3 w-full p-2 rounded bg-gray-700"
         />
+        <p className="text-sm text-gray-400 mb-4">
+          Al registrarte, aceptas nuestros <a href="/terms" className="text-amber-400">Términos de Servicio</a> y <a href="/privacy" className="text-amber-400">Política de Privacidad</a>.
+        </p>
 
         {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
 
